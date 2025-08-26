@@ -34,7 +34,7 @@ export function LoginForm() {
     } else {
       // Show error for invalid credentials
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      setError(`Invalid credentials. Please use ID: ${email}, Password: ${password}`)
+      setError(`계정정보가 잘못되었습니다. 아이디와 비밀번호를 다시 확인해주세요. ID: ${email}, Password: ${password}`)
     }
 
     setIsLoading(false)
