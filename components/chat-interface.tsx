@@ -4,7 +4,8 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MediBotLogo } from "@/components/medi-bot-logo"
+import { MediBot } from "@/components/medi-bot"
+import { MediLogo } from "@/components/medi-logo"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
 interface Message {
@@ -95,9 +96,9 @@ export function ChatInterface() {
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
               <div className="w-8 h-8 text-white">
-                <MediBotLogo />
+                <MediLogo />
               </div>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">MediBot</h1>
@@ -134,7 +135,7 @@ export function ChatInterface() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <div className="w-6 h-6 text-blue-600">
-                  <MediBotLogo />
+                  <MediBot />
                 </div>
               </div>
             </div>
@@ -162,7 +163,7 @@ export function ChatInterface() {
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <div className="w-5 h-5 text-blue-600">
-                          <MediBotLogo />
+                          <MediBot />
                         </div>
                       </div>
                     </div>
@@ -211,7 +212,7 @@ export function ChatInterface() {
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <div className="w-5 h-5 text-blue-600">
-                      <MediBotLogo />
+                      <MediLogo />
                     </div>
                   </div>
                   <div className="bg-white p-4 rounded-2xl shadow-sm">

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MediBotLogo } from "@/components/medi-bot-logo"
+import { MediLogo } from "@/components/medi-logo"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -43,8 +43,8 @@ export function LoginForm() {
   return (
     <Card className="w-full">
       <CardHeader className="text-center space-y-4">
-        <div className="flex justify-center">
-          <MediBotLogo />
+        <div className="flex justify-center mb-0">
+          <MediLogo />
         </div>
         <div>
           <CardTitle className="text-2xl font-bold text-foreground">MediBot</CardTitle>
