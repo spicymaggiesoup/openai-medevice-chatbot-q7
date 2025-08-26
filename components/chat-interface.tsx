@@ -67,7 +67,7 @@ export function ChatInterface() {
     setTimeout(() => {
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I understand your concern. Let me help you with that.",
+        content: "불편한 증상을 구체적으로 말씀해주시면, 질병에 맞는 병원을 추천드릴게요. 😊",
         sender: "bot",
         timestamp: new Date(),
       }
@@ -212,7 +212,7 @@ export function ChatInterface() {
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <div className="w-5 h-5 text-blue-600">
-                      <MediLogo />
+                      <MediBot />
                     </div>
                   </div>
                   <div className="bg-white p-4 rounded-2xl shadow-sm">
