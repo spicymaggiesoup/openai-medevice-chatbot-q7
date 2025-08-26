@@ -47,20 +47,20 @@ export function LoginForm() {
           <MediBotLogo />
         </div>
         <div>
-          <CardTitle className="text-2xl font-bold text-foreground">Welcome to MediBot</CardTitle>
+          <CardTitle className="text-2xl font-bold text-foreground">MediBot</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Your trusted medical assistant. Please sign in to continue.
+            당신의 건강 보조도우미
           </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">User ID</Label>
+            <Label htmlFor="email">ID</Label>
             <Input
               id="email"
               type="text"
-              placeholder="Enter your user ID"
+              placeholder="아이디를 입력하세요."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -72,7 +72,7 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
-              placeholder="Enter your password"
+              placeholder="비밀번호를 입력하세요."
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -85,13 +85,13 @@ export function LoginForm() {
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? "로그인 중..." : "로그인"}
           </Button>
         </form>
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <button className="text-primary hover:underline">Contact your healthcare provider</button>
+            계정이 없으면{" "}
+            <button className="text-primary hover:underline">회원가입을 진행하세요.</button>
           </p>
         </div>
       </CardContent>

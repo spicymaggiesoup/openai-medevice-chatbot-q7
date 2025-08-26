@@ -20,27 +20,27 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Tell me about your symptom 😊",
+      content: "안녕하세요? 불편한 증상을 말씀해주세요. 😊",
       sender: "bot",
       timestamp: new Date(),
       type: "text",
     },
     {
       id: "2",
-      content: "I've been coughing a lot recently",
+      content: "최근에 기침이 잦아졌어요.",
       sender: "user",
       timestamp: new Date(),
       type: "text",
     },
-    {
-      id: "3",
-      content:
-        "Coughing can have many causes, such as a cold, flu, or allergies. Are you experiencing any of the following symptoms",
-      sender: "bot",
-      timestamp: new Date(),
-      type: "symptom-check",
-      symptoms: ["Sore throat", "Fever", "Shortness of breath"],
-    },
+    // {
+    //   id: "3",
+    //   content:
+    //     "Coughing can have many causes, such as a cold, flu, or allergies. Are you experiencing any of the following symptoms",
+    //   sender: "bot",
+    //   timestamp: new Date(),
+    //   type: "symptom-check",
+    //   symptoms: ["Sore throat", "Fever", "Shortness of breath"],
+    // },
   ])
 
   const [inputMessage, setInputMessage] = useState("")
@@ -100,7 +100,7 @@ export function ChatInterface() {
                 <MediBotLogo />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Chatbot</h1>
+            <h1 className="text-2xl font-bold text-gray-900">MediBot</h1>
           </div>
         </div>
 
@@ -108,9 +108,9 @@ export function ChatInterface() {
         <div className="flex-1 p-4">
           <nav className="space-y-2">
             {[
-              { name: "Home", icon: Home },
-              { name: "Symptoms", icon: Activity },
-              { name: "History", icon: Clock },
+              //{ name: "Chat", icon: Home },
+              { name: "증상 문의", icon: Activity },
+              { name: "과거 내역", icon: Clock },
             ].map((item) => (
               <button
                 key={item.name}
@@ -139,7 +139,7 @@ export function ChatInterface() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">oretangd</span>
+              <span className="text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">김환자</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -195,7 +195,7 @@ export function ChatInterface() {
               </div>
             ))}
 
-            <div className="flex items-start gap-3 bg-white p-4 rounded-2xl shadow-sm">
+            {/* <div className="flex items-start gap-3 bg-white p-4 rounded-2xl shadow-sm">
               <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <Plus className="w-5 h-5 text-white" />
               </div>
@@ -204,7 +204,7 @@ export function ChatInterface() {
                   Try consulting a physician or a pulmonologist for further investigation.
                 </p>
               </div>
-            </div>
+            </div> */}
 
             {isTyping && (
               <div className="flex justify-start">
