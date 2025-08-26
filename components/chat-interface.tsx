@@ -94,7 +94,7 @@ export function ChatInterface() {
     <div className="flex w-full h-screen">
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Sidebar Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
               <div className="w-8 h-8 text-white">
