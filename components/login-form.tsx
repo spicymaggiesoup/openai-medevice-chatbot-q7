@@ -21,7 +21,7 @@ export function LoginForm() {
     setError("")
 
     // Check for admin credentials
-    if (email === "admin" && password === "admin1234") {
+    if ((email === "admin" && password === "admin1234") || (email === "test1@test.com" && password === "test1234")) {
       // Simulate authentication delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -34,7 +34,7 @@ export function LoginForm() {
     } else {
       // Show error for invalid credentials
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      setError("Invalid credentials. Please use ID: admin, Password: admin1234")
+      setError(`Invalid credentials. Please use ID: ${email}, Password: ${password}`)
     }
 
     setIsLoading(false)
