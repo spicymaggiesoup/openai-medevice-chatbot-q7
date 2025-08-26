@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MediBot } from "@/components/medi-bot"
 import { MediLogo } from "@/components/medi-logo"
+import { IconMenu } from "@/components/icon-menu"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
 interface Message {
@@ -46,6 +47,7 @@ export function ChatInterface() {
 
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [isClosed, setIsClosed] = useState(false)
   const [activeTab, setActiveTab] = useState("Home")
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -90,57 +92,77 @@ export function ChatInterface() {
     window.location.href = "/"
   }
 
+  const handleSideMenu = () => {
+    setIsClosed(!isClosed);
+  }
+
   return (
     <div className="flex w-full h-screen">
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      {/* <div className="w-80 bg-white border-r border-gray-200 flex flex-col"> */}
+      <div
+        // className={`fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 flex flex-col
+        //             transition-transform duration-300 ease-in-out
+        //             ${!isClosed ? "-translate-x-full" : "translate-x-0"}`}
+          className={`bg-white border-r border-gray-200 overflow-hidden
+                    transition-[width] duration-500 ease-in-out
+                    ${isClosed ? 'w-0' : 'w-80'}`}
+          aria-hidden={isClosed}
+        >
         {/* Sidebar Header */}
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
-              <div className="w-8 h-8 text-white">
-                <MediLogo />
+        <div className={`h-full transition-opacity duration-300 ${isClosed ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
+                <div className="w-8 h-8 text-white">
+                  <MediLogo />
+                </div>
               </div>
+              <h1 className="text-2xl font-bold text-gray-900">MediBot</h1>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">MediBot</h1>
           </div>
-        </div>
 
-        {/* Navigation */}
-        <div className="flex-1 p-4">
-          <nav className="space-y-2">
-            {[
-              //{ name: "Chat", icon: Home },
-              { name: "증상 문의", icon: Activity },
-              { name: "과거 내역", icon: Clock },
-            ].map((item) => (
-              <button
-                key={item.name}
-                onClick={() => setActiveTab(item.name)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === item.name ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </button>
-            ))}
-          </nav>
+          {/* Navigation */}
+          <div className="flex-1 p-4">
+            <nav className="space-y-2">
+              {[
+                //{ name: "Chat", icon: Home },
+                { name: "증상 문의", icon: Activity },
+                { name: "과거 내역", icon: Clock },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                    activeTab === item.name ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.name}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div
+        className="flex-1 flex flex-col">
         <div className="bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <div className="w-6 h-6 text-blue-600">
-                  <MediBot />
-                </div>
+              <div
+                onClick={() => handleSideMenu()}
+                className="w-10 h-10 flex items-center justify-center cursor-pointer">
+                <IconMenu />
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">김환자</span>
+              <span className="text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">
+                <span>73세</span>
+                <span> 여성</span>
+                <span> 김환자</span>
+              </span>
               <Button
                 variant="outline"
                 size="sm"
@@ -240,7 +262,7 @@ export function ChatInterface() {
               <Input
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your message..."
+                placeholder="MediBot에게 물어보세요!"
                 className="flex-1 border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
                 disabled={isTyping}
               />
