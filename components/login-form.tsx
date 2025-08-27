@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediLogo } from "@/components/medi-logo"
 
+import { getUsers } from "@/db"
+
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -19,6 +21,10 @@ export function LoginForm() {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+
+    const data = await getUsers();
+
+    console.log(data);
 
     // Check for admin credentials
     if ((email === "admin" && password === "admin1234") || (email === "test1@test.com" && password === "test1234")) {
