@@ -1,9 +1,10 @@
-import { db, sql } from "@vercel/postgres";
+
+import { sql } from '@vercel/postgres';
 
 export async function getUsers() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , email
@@ -26,8 +27,8 @@ export async function getUsers() {
 
 export async function getUserLocations() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , user_id
@@ -46,8 +47,8 @@ export async function getUserLocations() {
 
 export async function getChatRooms() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , user_id
@@ -67,8 +68,8 @@ export async function getChatRooms() {
 
 export async function getChatMessages() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , chat_room_id
@@ -86,8 +87,8 @@ export async function getChatMessages() {
 
 export async function getDiseases() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , name
@@ -103,8 +104,8 @@ export async function getDiseases() {
 
 export async function getSymptoms() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , name
@@ -120,8 +121,8 @@ export async function getSymptoms() {
 
 export async function getSymptomSynonyms() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , symptom_id
@@ -139,8 +140,8 @@ export async function getSymptomSynonyms() {
 
 export async function getHospitals() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , name
@@ -163,8 +164,8 @@ export async function getHospitals() {
 
 export async function getMedicalEquipmentCategories() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , name
@@ -180,8 +181,8 @@ export async function getMedicalEquipmentCategories() {
 
 export async function getMedicalEquipmentSubcategories() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , name
@@ -197,8 +198,8 @@ export async function getMedicalEquipmentSubcategories() {
 
 export async function getSymptomAnalysis() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , chat_message_id
@@ -217,8 +218,8 @@ export async function getSymptomAnalysis() {
 
 export async function getBertReportSymptoms() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , symptom_analysis_id
@@ -235,8 +236,8 @@ export async function getBertReportSymptoms() {
 
 export async function getHospitalRecommendations() {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , symptom_analysis_id
@@ -255,8 +256,8 @@ export async function getHospitalRecommendations() {
 
 export async function learning_data () {
   try {
-    const client = await db.connect();
-    const selectTable = await client.sql
+    //const client = await db.connect();
+    const selectTable = await sql
 `SELECT 
       id
     , original_text

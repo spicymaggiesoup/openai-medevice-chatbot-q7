@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediLogo } from "@/components/medi-logo"
+import { getUsers } from "@/lib/db"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -16,12 +17,16 @@ export function LoginForm() {
   const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     // Check for admin credentials
     if ((email === "admin" && password === "admin1234") || (email === "test1@test.com" && password === "test1234")) {
+      //const test = await getUsers();
+
+      
       // Simulate authentication delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
 

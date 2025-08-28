@@ -50,6 +50,10 @@ export function ChatInterface() {
   const [isClosed, setIsClosed] = useState(false)
   const [activeTab, setActiveTab] = useState("Home")
 
+  const [age, setAge] = useState("73")
+  const [sex, setSex] = useState("여성")
+  const [patName, setPatName] = useState("김환자")
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputMessage.trim()) return
@@ -158,10 +162,13 @@ export function ChatInterface() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">
-                <span>73세</span>
-                <span> 여성</span>
-                <span> 김환자</span>
+              <span className="flex items-center gap-2 mt-1 text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <div>{sex} </div>
+                </div>
+                <div>{age}세 </div>
+                <div>{patName}</div>
               </span>
               <Button
                 variant="outline"
