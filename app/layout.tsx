@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   generator: 'v0.app',
 }
 
-const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAOJSKEY || process.env.KAKAOJSKEY;
+const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAOJSKEY;
 const KAKAO_API = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&libraries=services,clusterer&autoload=false`
 
 export default function RootLayout({
