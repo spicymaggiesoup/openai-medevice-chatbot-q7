@@ -9,8 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediLogo } from "@/components/medi-logo"
 
-import { getUsers } from "@/db"
-
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -22,12 +20,12 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
-    const data = await getUsers();
-
-    console.log(data);
-
     // Check for admin credentials
     if ((email === "admin" && password === "admin1234") || (email === "test1@test.com" && password === "test1234")) {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      console.log("login-form data::: ", data);
+      
       // Simulate authentication delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
