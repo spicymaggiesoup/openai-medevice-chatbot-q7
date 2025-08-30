@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { MediBot } from "@/components/medi-bot"
 import { MediLogo } from "@/components/medi-logo"
 import { IconMenu } from "@/components/icon-menu"
+import { MapLayout } from "@/components/map-layout"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
 interface Message {
@@ -14,8 +15,64 @@ interface Message {
   content: string
   sender: "user" | "bot"
   timestamp: Date
-  type?: "text" | "symptom-check" | "advice"
-  symptoms?: string[]
+  type?: "text" | "button-check" | "map"
+  buttons?: string[]
+}
+
+const messageScenario = {
+  user: [],
+  bot: {
+    symptoms: {
+      Q: [
+
+      ],
+      A: [
+        // {
+        //   id: (Date.now() + 1).toString(),
+        //   content: "불편한 증상을 구체적으로 말씀해주시면, 질병에 맞는 병원을 추천드릴게요. 😊",
+        //   sender: "bot",
+        //   timestamp: new Date(),
+        //   type: "text",
+        // },
+        {
+          id: (Date.now() + 1).toString(),
+          content: "더 구체적으로 말씀해주실 수 있을까요? 😊",
+          sender: "bot",
+          timestamp: new Date(),
+          type: "text",
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          content: "현 위치에서 가장 가까운 병원을 검색할까요?",
+          sender: "bot",
+          timestamp: new Date(),
+          type: "button-check",
+          buttons: ["네, 검색해주세요.", "아니요, 직접 찾아볼게요."],
+        },
+      ],
+    },
+    search: {
+      Q: [
+        {
+          id: (Date.now() + 1).toString(),
+          content: "사용자 위치에 기반해서 찾은 병원이에요. 🏥",
+          sender: "bot",
+          timestamp: new Date(),
+          type: "map",
+          location: [],
+        },
+      ],
+      A: [
+        {
+          id: (Date.now() + 1).toString(),
+          content: `네, 알겠습니다.😊 또 불편한 부분이 있으면 말씀해주세요. `,
+          sender: "bot",
+          timestamp: new Date(),
+          type: "text",
+        },
+      ],
+    },
+  },
 }
 
 export function ChatInterface() {
@@ -27,32 +84,31 @@ export function ChatInterface() {
       timestamp: new Date(),
       type: "text",
     },
-    {
-      id: "2",
-      content: "최근에 기침이 잦아졌어요.",
-      sender: "user",
-      timestamp: new Date(),
-      type: "text",
-    },
-    // {
-    //   id: "3",
-    //   content:
-    //     "Coughing can have many causes, such as a cold, flu, or allergies. Are you experiencing any of the following symptoms",
-    //   sender: "bot",
-    //   timestamp: new Date(),
-    //   type: "symptom-check",
-    //   symptoms: ["Sore throat", "Fever", "Shortness of breath"],
-    // },
   ])
 
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [isClosed, setIsClosed] = useState(false)
   const [activeTab, setActiveTab] = useState("Home")
+  const [showMap, setShowMap] = useState(false)
 
   const [age, setAge] = useState("73")
   const [sex, setSex] = useState("여성")
   const [patName, setPatName] = useState("김환자")
+
+    const [symptomsQ, setSymptomsQ] = useState(0)
+    const [symptomsA, setSymptomsA] = useState(0)
+    const [searchQ, setSearchQ] = useState(0)
+    const [searchA, setSearchA] = useState(0)
+
+  const handleDeviceSize = () => {
+    const detectMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (detectMobile) {
+      setTimeout(() => {
+        setIsClosed(true);
+      });
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,25 +127,40 @@ export function ChatInterface() {
 
     // Simulate bot response
     setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "불편한 증상을 구체적으로 말씀해주시면, 질병에 맞는 병원을 추천드릴게요. 😊",
-        sender: "bot",
-        timestamp: new Date(),
-      }
+      const botMessage: any = Object.assign(messageScenario.bot.symptoms.A[symptomsA], {
+        id: Date.now().toString()
+      });
+
+      setSymptomsA(symptomsA + 1);
       setMessages((prev) => [...prev, botMessage])
       setIsTyping(false)
     }, 1500)
   }
 
-  const handleSymptomClick = (symptom: string) => {
+  const handleButtonClick = (_message: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: symptom,
+      content: _message,
       sender: "user",
       timestamp: new Date(),
     }
+
     setMessages((prev) => [...prev, userMessage])
+      setInputMessage("")
+      setIsTyping(true)
+
+      // Simulate bot response
+      setTimeout(() => {
+        const botMessage: any = Object.assign(
+          _message.includes('네') ? messageScenario.bot.search.Q[searchQ] : messageScenario.bot.search.A[searchA],
+          {
+            id: Date.now().toString()
+          });
+
+        setSymptomsA(searchQ + 1);
+        setMessages((prev) => [...prev, botMessage])
+        setIsTyping(false)
+    }, 1500);
   }
 
   const handleLogout = () => {
@@ -100,8 +171,21 @@ export function ChatInterface() {
     setIsClosed(!isClosed);
   }
 
+  const handleLocationRequest = () => {
+    setShowMap(true)
+    const locationMessage: Message = {
+      id: Date.now().toString(),
+      content:
+        "I've found some nearby healthcare facilities for you. You can view them on the map below and get directions to any of them.",
+      sender: "bot",
+      timestamp: new Date(),
+      type: "text",
+    }
+    setMessages((prev) => [...prev, locationMessage])
+  }
+
   return (
-    <div className="flex w-full h-screen">
+    <div className="flex w-full h-screen" onLoad={handleDeviceSize}>
       {/* <div className="w-80 bg-white border-r border-gray-200 flex flex-col"> */}
       <div
         // className={`fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 flex flex-col
@@ -188,15 +272,18 @@ export function ChatInterface() {
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-md ${message.sender === "user" ? "" : "w-full max-w-2xl"}`}>
-                  {message.sender === "bot" && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <div className="w-5 h-5 text-blue-600">
-                          <MediBot />
+                  {/* bot answer */}
+                  {
+                    message.sender === "bot" && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <div className="w-5 h-5 text-blue-600">
+                            <MediBot />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )
+                  }
 
                   <div
                     className={`p-4 rounded-2xl ${
@@ -205,25 +292,49 @@ export function ChatInterface() {
                   >
                     <p className="leading-relaxed">{message.content}</p>
 
-                    {message.type === "symptom-check" && message.symptoms && (
+                    {message.type === "button-check" && message.buttons && (
                       <div className="flex flex-wrap gap-2 mt-4">
-                        {message.symptoms.map((symptom) => (
+                        {message.buttons.map((_button) => (
                           <Button
-                            key={symptom}
+                            key={_button}
                             variant="outline"
                             size="sm"
-                            onClick={() => handleSymptomClick(symptom)}
+                            onClick={() => handleButtonClick(_button)}
                             className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                           >
-                            {symptom}
+                            {_button}
                           </Button>
                         ))}
+                      </div>
+                    )}
+
+                    {message.type === "map" && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        <MapLayout />
                       </div>
                     )}
                   </div>
                 </div>
               </div>
             ))}
+            
+            {/* {showMap && (
+              <div className="w-full">
+                <MapContainer
+                  userLocation={{ lat: 40.7128, lng: -74.006 }}
+                  onLocationSelect={(facility) => {
+                    const facilityMessage: Message = {
+                      id: Date.now().toString(),
+                      content: `You selected ${facility.name}. Would you like me to help you prepare for your visit or provide more information about this facility?`,
+                      sender: "bot",
+                      timestamp: new Date(),
+                      type: "text",
+                    }
+                    setMessages((prev) => [...prev, facilityMessage])
+                  }}
+                />
+              </div>
+            )} */}
 
             {/* <div className="flex items-start gap-3 bg-white p-4 rounded-2xl shadow-sm">
               <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
