@@ -20,11 +20,11 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
+    const data = await fetch("/api/users")   // GET: proxy
+    console.log("/api/users", data);
+
     // Check for admin credentials
-    if ((email === "admin" && password === "admin1234") || (email === "test1@test.com" && password === "test1234")) {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      console.log("login-form data::: ", data);
+    if ((email === "test1@test.com" && password === "test1234") || (email === "admin" && password === "admin1234")) {
       
       // Simulate authentication delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -43,6 +43,12 @@ export function LoginForm() {
 
     setIsLoading(false)
   }
+
+  const handleEchoTest = async (e: React.FormEvent) => {
+    const data = await fetch("/api/echo")   // GET: proxy
+
+    console.log("/api/echo", data);
+  };
 
   return (
     <Card className="w-full">
@@ -95,7 +101,11 @@ export function LoginForm() {
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             계정이 없으면{" "}
-            <button className="text-primary hover:underline">회원가입을 진행하세요.</button>
+            <button 
+              className="text-primary hover:underline"
+              onClick={handleEchoTest}
+            >회원가입을 진행하세요.
+            </button>
           </p>
         </div>
       </CardContent>
