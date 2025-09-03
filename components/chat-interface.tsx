@@ -123,11 +123,10 @@ export function ChatInterface() {
   const [searchQ, setSearchQ] = useState(0)
   const [searchA, setSearchA] = useState(0)
 
-  useEffect(() => {
-    console.log("Functional component mounted and DOM is ready!");
+  const handleDetectMobild = () => window.matchMedia('(min-width: 768px)').matches;
 
-    const detectMobile = window.matchMedia('(min-width: 768px)').matches;
-    if (detectMobile) {
+  useEffect(() => {
+    if (handleDetectMobild()) {
       setTimeout(() => {
         setIsClosed(false);
       });
@@ -219,7 +218,7 @@ export function ChatInterface() {
       <div
           className={`bg-white border-r border-gray-200 overflow-hidden
                     transition-[width] duration-500 ease-in-out
-                    ${isClosed ? 'w-0 opacity-0' : 'w-80 h-full absolute opacity-100'}`}
+                    ${isClosed ? `w-0 opacity-0` : `w-80 opacity-100${handleDetectMobild() ? 'h-full absolute' : ''}`}`}
           aria-hidden={isClosed}
         >
         {/* Sidebar Header */}
