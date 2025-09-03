@@ -2,7 +2,7 @@
 
 import type React from "react"
 import type { MouseEvent } from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MediBot } from "@/components/medi-bot"
@@ -13,7 +13,7 @@ import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
 interface Message {
   id: string
-  content: string
+  content: string[]
   sender: "user" | "bot"
   timestamp: Date
   type?: "text" | "button-check" | "map"
@@ -37,21 +37,14 @@ const messageScenario = {
         // },
         {
           id: (Date.now() + 1).toString(),
-          content: "말씀하신 증상으로 예측했을 때...",
+          content: ["말씀하신 증상으로 예측했을 때...", "'진료과'에 방문하셔야할 것 같아요."],
           sender: "bot",
           timestamp: new Date(),
           type: "text",
         },
         {
           id: (Date.now() + 1).toString(),
-          content: "'진료과'에 방문하셔야할 것 같아요.",
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: "사용자 정보를 기반으로 '진료과'의 진료를 볼 수 있는 병원을 추천해드릴까요?",
+          content: ["사용자 정보를 기반으로", "'진료과'의 진료를 볼 수 있는 병원을 추천해드릴까요?"],
           sender: "bot",
           timestamp: new Date(),
           type: "button-check",
@@ -59,14 +52,14 @@ const messageScenario = {
         },
         {
           id: (Date.now() + 1).toString(),
-          content: "또 불편한 증상이 있을 때, 말씀해주세요.",
+          content: ["또 불편한 증상이 있을 때, 말씀해주세요."],
           sender: "bot",
           timestamp: new Date(),
           type: "text",
         },
         {
           id: (Date.now() + 1).toString(),
-          content: "언제든 가야할 병원을 바로 추천해 드릴게요. 🙌",
+          content: ["언제든 가야할 병원을 바로 추천해 드릴게요. 🙌"],
           sender: "bot",
           timestamp: new Date(),
           type: "text",
@@ -77,7 +70,7 @@ const messageScenario = {
       Q: [
         {
           id: (Date.now() + 1).toString(),
-          content: "'진료과'를 볼 수 있는 병원 목록이에요. 🏥",
+          content: ["'진료과'를 볼 수 있는 병원 목록이에요. 🏥", "👉박창수안과의원"],
           sender: "bot",
           timestamp: new Date(),
           type: "map",
@@ -87,7 +80,7 @@ const messageScenario = {
       A: [
         {
           id: (Date.now() + 1).toString(),
-          content: `네, 알겠습니다.😊 또 불편한 부분이 있으면 말씀해주세요. `,
+          content: ["네, 알겠습니다.😊", "또 불편한 부분이 있으면 말씀해주세요."],
           sender: "bot",
           timestamp: new Date(),
           type: "text",
@@ -101,7 +94,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "안녕하세요? 불편한 증상을 말씀해주세요. 😊",
+      content: ["안녕하세요? 불편한 증상을 말씀해주세요. 😊"],
       sender: "bot",
       timestamp: new Date(),
       type: "text",
@@ -110,6 +103,7 @@ export function ChatInterface() {
 
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [activeTyping, setActiveTyping] = useState(false)
   const [isClosed, setIsClosed] = useState(true)
   const [activeTab, setActiveTab] = useState("증상 문의")
   const [showMap, setShowMap] = useState(false)
@@ -122,6 +116,8 @@ export function ChatInterface() {
   const [symptomsA, setSymptomsA] = useState(0)
   const [searchQ, setSearchQ] = useState(0)
   const [searchA, setSearchA] = useState(0)
+
+  const typingRef = useRef(null);
 
   const handleInnerSize = () => window.innerWidth <= 768;
 
@@ -139,7 +135,7 @@ export function ChatInterface() {
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputMessage,
+      content: [inputMessage],
       sender: "user",
       timestamp: new Date(),
     }
@@ -147,6 +143,7 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, userMessage])
     setInputMessage("")
     setIsTyping(true)
+    setActiveTyping(true)
 
     // Simulate bot response
     setTimeout(() => {
@@ -157,13 +154,14 @@ export function ChatInterface() {
       setSymptomsA(symptomsA + 1);
       setMessages((prev) => [...prev, botMessage])
       setIsTyping(false)
+      setActiveTyping(false)
     }, 1500)
   }
 
   const handleButtonClick = (_message: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: _message,
+      content: [_message],
       sender: "user",
       timestamp: new Date(),
     }
@@ -171,18 +169,33 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, userMessage])
       setInputMessage("")
       setIsTyping(true)
+      setActiveTyping(true)
+
+      const getReplyMessage = () => {
+        if (_message.includes('네')) {
+          setActiveTyping(false);
+          return messageScenario.bot.search.Q[searchQ];
+        }
+
+        if (_message.includes('아니요')) {
+          setActiveTyping(false);
+          return messageScenario.bot.search.A[searchA];
+        }
+
+        return Object.assign(userMessage, {
+          content: ['버튼을 선택해주세요! 🙌']
+        });
+      };
 
       // Simulate bot response
       setTimeout(() => {
-        const botMessage: any = Object.assign(
-          _message.includes('네') ? messageScenario.bot.search.Q[searchQ] : messageScenario.bot.search.A[searchA],
-          {
+        const botMessage: any = Object.assign(getReplyMessage(), {
             id: Date.now().toString()
-          });
+        });
 
+        setIsTyping(false)
         setSymptomsA(searchQ + 1);
         setMessages((prev) => [...prev, botMessage])
-        setIsTyping(false)
     }, 1500);
   }
 
@@ -205,7 +218,7 @@ export function ChatInterface() {
     const locationMessage: Message = {
       id: Date.now().toString(),
       content:
-        "I've found some nearby healthcare facilities for you. You can view them on the map below and get directions to any of them.",
+        ["I've found some nearby healthcare facilities for you. You can view them on the map below and get directions to any of them."],
       sender: "bot",
       timestamp: new Date(),
       type: "text",
@@ -286,7 +299,7 @@ export function ChatInterface() {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center gap-2 bg-transparent hover:bg-emerald-600 hover:text-white"
+                className="flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -323,7 +336,9 @@ export function ChatInterface() {
                       message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
                     }`}
                   >
-                    <p className="leading-relaxed">{message.content}</p>
+                    {message.content.map((_message, order) => (
+                      <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
+                    ))}
 
                     {message.type === "button-check" && message.buttons && (
                       <div className="flex flex-wrap gap-2 mt-4">
@@ -333,7 +348,7 @@ export function ChatInterface() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleButtonClick(_button)}
-                            className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                            className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white"
                           >
                             {_button}
                           </Button>
@@ -412,11 +427,12 @@ export function ChatInterface() {
           <div className="max-w-4xl mx-auto">
             <form onSubmit={handleSendMessage} className="flex gap-3">
               <Input
+                ref={typingRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="MediBot에게 물어보세요!"
                 className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
-                disabled={isTyping}
+                disabled={activeTyping}
               />
               <Button
                 type="submit"
