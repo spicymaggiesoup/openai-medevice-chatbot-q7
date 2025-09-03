@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import type { MouseEvent } from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -133,10 +134,6 @@ export function ChatInterface() {
     }
   }, []); 
 
-  const handleDeviceSize = () => {
-    
-  };
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputMessage.trim()) return
@@ -194,6 +191,12 @@ export function ChatInterface() {
     window.location.href = "/"
   }
 
+  const handleSideMenuBackground = (e: MouseEvent<HTMLDivElement>) => {
+    if (e?.currentTarget.className.indexOf('chat-container') > -1) {
+      setIsClosed(true);
+    }
+  }
+
   const handleSideMenu = () => {
     setIsClosed(!isClosed);
   }
@@ -213,22 +216,16 @@ export function ChatInterface() {
 
   return (
     <div className="flex w-full h-screen">
-    {/* <div className="flex w-full h-screen" onLoad={handleDeviceSize}> */}
-      {/* <div className="w-80 bg-white border-r border-gray-200 flex flex-col"> */}
       <div
-        // className={`fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 flex flex-col
-        //             transition-transform duration-300 ease-in-out
-        //             ${!isClosed ? "-translate-x-full" : "translate-x-0"}`}
           className={`bg-white border-r border-gray-200 overflow-hidden
                     transition-[width] duration-500 ease-in-out
-                    ${isClosed ? 'w-0' : 'w-80'}`}
+                    ${isClosed ? 'w-0 opacity-0' : 'w-80 h-full absolute opacity-100'}`}
           aria-hidden={isClosed}
         >
         {/* Sidebar Header */}
-        <div className={`h-full transition-opacity duration-300 ${isClosed ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`h-full transition-opacity duration-500 ${isClosed ? 'opacity-0' : 'opacity-100'}`}>
           <div className="p-6">
             <div className="flex items-center gap-3">
-              {/* <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center"> */}
               <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                 <div className="w-10 h-9 text-white">
                   <MediLogo />
@@ -270,8 +267,9 @@ export function ChatInterface() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
+                className="w-10 h-10 flex items-center justify-center cursor-pointer"
                 onClick={() => handleSideMenu()}
-                className="w-10 h-10 flex items-center justify-center cursor-pointer">
+              >
                 <IconMenu />
               </div>
             </div>
@@ -298,8 +296,10 @@ export function ChatInterface() {
           </div>
         </div>
 
-        {/* <div className="flex-1 overflow-y-auto p-6 bg-gray-50"> */}
-        <div className="flex-1 overflow-y-auto p-6 bg-emerald-50">
+        <div
+          className="chat-container flex-1 overflow-y-auto p-6 bg-emerald-50"
+          onClick={handleSideMenuBackground}
+        >
           <div className="max-w-4xl mx-auto space-y-6">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
