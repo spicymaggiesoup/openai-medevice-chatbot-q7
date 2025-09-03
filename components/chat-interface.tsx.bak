@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MediBot } from "@/components/medi-bot"
@@ -36,39 +36,18 @@ const messageScenario = {
         // },
         {
           id: (Date.now() + 1).toString(),
-          content: "말씀하신 증상으로 예측했을 때...",
+          content: "더 구체적으로 말씀해주실 수 있을까요? 😊",
           sender: "bot",
           timestamp: new Date(),
           type: "text",
         },
         {
           id: (Date.now() + 1).toString(),
-          content: "'진료과'에 방문하셔야할 것 같아요.",
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: "사용자 정보를 기반으로 '진료과'의 진료를 볼 수 있는 병원을 추천해드릴까요?",
+          content: "현 위치에서 가장 가까운 병원을 검색할까요?",
           sender: "bot",
           timestamp: new Date(),
           type: "button-check",
-          buttons: ["네, 추천해주세요.", "아니요, 괜찮아요."],
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: "또 불편한 증상이 있을 때, 말씀해주세요.",
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: "언제든 가야할 병원을 바로 추천해 드릴게요. 🙌",
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
+          buttons: ["네, 검색해주세요.", "아니요, 직접 찾아볼게요."],
         },
       ],
     },
@@ -76,7 +55,7 @@ const messageScenario = {
       Q: [
         {
           id: (Date.now() + 1).toString(),
-          content: "'진료과'를 볼 수 있는 병원 목록이에요. 🏥",
+          content: "사용자 위치에 기반해서 찾은 병원이에요. 🏥",
           sender: "bot",
           timestamp: new Date(),
           type: "map",
@@ -110,23 +89,17 @@ export function ChatInterface() {
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [isClosed, setIsClosed] = useState(false)
-  const [activeTab, setActiveTab] = useState("증상 문의")
+  const [activeTab, setActiveTab] = useState("Home")
   const [showMap, setShowMap] = useState(false)
 
   const [age, setAge] = useState("73")
-  const [sex, setSex] = useState("남성")
+  const [sex, setSex] = useState("여성")
   const [patName, setPatName] = useState("김환자")
 
-  const [symptomsQ, setSymptomsQ] = useState(0)
-  const [symptomsA, setSymptomsA] = useState(0)
-  const [searchQ, setSearchQ] = useState(0)
-  const [searchA, setSearchA] = useState(0)
-
-  useEffect(() => {
-    console.log("Functional component mounted and DOM is ready!");
-
-        
-  }, []); 
+    const [symptomsQ, setSymptomsQ] = useState(0)
+    const [symptomsA, setSymptomsA] = useState(0)
+    const [searchQ, setSearchQ] = useState(0)
+    const [searchA, setSearchA] = useState(0)
 
   const handleDeviceSize = () => {
     const detectMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -227,9 +200,8 @@ export function ChatInterface() {
         <div className={`h-full transition-opacity duration-300 ${isClosed ? 'opacity-0' : 'opacity-100'}`}>
           <div className="p-6">
             <div className="flex items-center gap-3">
-              {/* <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center"> */}
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                <div className="w-10 h-9 text-white">
+              <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
+                <div className="w-8 h-8 text-white">
                   <MediLogo />
                 </div>
               </div>
@@ -242,16 +214,15 @@ export function ChatInterface() {
             <nav className="space-y-2">
               {[
                 //{ name: "Chat", icon: Home },
-                { name: "증상 문의", icon: Activity, className: '' },
-                { name: "과거 내역", icon: Clock, className: '' },
+                { name: "증상 문의", icon: Activity },
+                { name: "과거 내역", icon: Clock },
               ].map((item) => (
                 <button
                   key={item.name}
                   onClick={() => setActiveTab(item.name)}
-                  //w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors bg-teal-50 text-teal-700 font-medium
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeTab === item.name ? "bg-green-50 text-teal-900 font-medium" : "text-gray-700 hover:bg-gray-50"
-                  } ${item.className}`}
+                    activeTab === item.name ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700 hover:bg-gray-50"
+                  }`}
                 >
                   <item.icon className="w-5 h-5" />
                   {item.name}
@@ -275,10 +246,9 @@ export function ChatInterface() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {/* <span className="flex items-center gap-2 mt-1 text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full"> */}
-              <span className="flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full">
+              <span className="flex items-center gap-2 mt-1 text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full">
                 <div className="flex items-center gap-1">
-                  <div className={`w-2 h-2 rounded-full bg-${sex === "여성" ? "red" : "blue"}-500`}></div>
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
                   <div>{sex} </div>
                 </div>
                 <div>{age}세 </div>
@@ -288,7 +258,7 @@ export function ChatInterface() {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center gap-2 bg-transparent hover:bg-emerald-600 hover:text-white"
+                className="flex items-center gap-2 bg-transparent"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -297,8 +267,7 @@ export function ChatInterface() {
           </div>
         </div>
 
-        {/* <div className="flex-1 overflow-y-auto p-6 bg-gray-50"> */}
-        <div className="flex-1 overflow-y-auto p-6 bg-emerald-50">
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <div className="max-w-4xl mx-auto space-y-6">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
@@ -307,10 +276,8 @@ export function ChatInterface() {
                   {
                     message.sender === "bot" && (
                       <div className="flex items-center gap-2 mb-2">
-                        {/* <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center"> */}
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                          {/* <div className="w-5 h-5 text-blue-600"> */}
-                          <div className="w-8 h-8 text-white-600">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <div className="w-5 h-5 text-blue-600">
                             <MediBot />
                           </div>
                         </div>
@@ -320,7 +287,7 @@ export function ChatInterface() {
 
                   <div
                     className={`p-4 rounded-2xl ${
-                      message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
+                      message.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
                     }`}
                   >
                     <p className="leading-relaxed">{message.content}</p>
@@ -380,12 +347,11 @@ export function ChatInterface() {
               </div>
             </div> */}
 
-            {/* BRG */}
             {isTyping && (
               <div className="flex justify-start">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                    <div className="w-8 h-8 text-blue-600">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 text-blue-600">
                       <MediBot />
                     </div>
                   </div>
@@ -393,11 +359,11 @@ export function ChatInterface() {
                     <div className="flex gap-1">
                       <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" />
                       <div
-                        className="w-2 h-2 bg-red-300 rounded-full animate-bounce"
+                        className="w-2 h-2 bg-blue-300 rounded-full animate-bounce"
                         style={{ animationDelay: "0.1s" }}
                       />
                       <div
-                        className="w-2 h-2 bg-green-300 rounded-full animate-bounce"
+                        className="w-2 h-2 bg-blue-300 rounded-full animate-bounce"
                         style={{ animationDelay: "0.2s" }}
                       />
                     </div>
@@ -415,13 +381,13 @@ export function ChatInterface() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="MediBot에게 물어보세요!"
-                className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
+                className="flex-1 border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-xl"
                 disabled={isTyping}
               />
               <Button
                 type="submit"
                 disabled={!inputMessage.trim() || isTyping}
-                className="bg-teal-500 hover:bg-emerald-600 text-white rounded-xl px-6"
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl px-6"
               >
                 <Send className="w-4 h-4" />
               </Button>

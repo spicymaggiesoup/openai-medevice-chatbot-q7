@@ -23,6 +23,10 @@ export function LoginForm() {
     const data = await fetch("/api/users")   // GET: proxy
     console.log("/api/users", data);
 
+    if (!email.length || !password.length!) {
+      setError(`아이디나 비밀번호를 다시 확인해주세요.`);
+    } 
+
     // Check for admin credentials
     if ((email === "test1@test.com" && password === "test1234") || (email === "admin" && password === "admin1234")) {
       
@@ -92,7 +96,7 @@ export function LoginForm() {
           {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="w-full bg-emerald-600 hover:bg-emerald/90 text-primary-foreground"
             disabled={isLoading}
           >
             {isLoading ? "로그인 중..." : "로그인"}
@@ -102,7 +106,7 @@ export function LoginForm() {
           <p className="text-sm text-muted-foreground">
             계정이 없으면{" "}
             <button 
-              className="text-primary hover:underline"
+              className="text-green-700 hover:font-semibold"
               onClick={handleEchoTest}
             >회원가입을 진행하세요.
             </button>

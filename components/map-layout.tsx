@@ -3,11 +3,11 @@ import { Map, MapMarker } from "react-kakao-maps-sdk"
 export function MapLayout() {
   return (
     <Map
-      center={{ lat: 33.5563, lng: 126.79581 }}
+      center={{ lat: 37.497419, lng: 127.026605 }}
       style={{ width: "100%", height: "360px" }}
     >
-      <MapMarker position={{ lat: 33.55635, lng: 126.795841 }}>
-        <div style={{ color: "#000" }}>Hello World!</div>
+      <MapMarker position={{ lat: 37.497419, lng: 127.026605 }}>
+        <div style={{ color: "#000" }}>박창수안과의원</div>
       </MapMarker>
     </Map>
   )
