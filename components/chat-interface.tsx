@@ -123,10 +123,10 @@ export function ChatInterface() {
   const [searchQ, setSearchQ] = useState(0)
   const [searchA, setSearchA] = useState(0)
 
-  const handleDetectMobild = () => window.matchMedia('(min-width: 768px)').matches;
+  const handleInnerSize = () => window.innerWidth <= 768;
 
   useEffect(() => {
-    if (handleDetectMobild()) {
+    if (window.matchMedia('(min-width: 768px)').matches) {
       setTimeout(() => {
         setIsClosed(false);
       });
@@ -218,7 +218,7 @@ export function ChatInterface() {
       <div
           className={`bg-white border-r border-gray-200 overflow-hidden
                     transition-[width] duration-500 ease-in-out
-                    ${isClosed ? `w-0 opacity-0` : `w-80 opacity-100${handleDetectMobild() ? 'h-full absolute' : ''}`}`}
+                    ${isClosed ? `w-0 opacity-0` : `w-80 opacity-100${handleInnerSize() ? ' h-full absolute' : ''}`}`}
           aria-hidden={isClosed}
         >
         {/* Sidebar Header */}
