@@ -109,7 +109,7 @@ export function ChatInterface() {
 
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
-  const [isClosed, setIsClosed] = useState(false)
+  const [isClosed, setIsClosed] = useState(true)
   const [activeTab, setActiveTab] = useState("증상 문의")
   const [showMap, setShowMap] = useState(false)
 
@@ -125,16 +125,16 @@ export function ChatInterface() {
   useEffect(() => {
     console.log("Functional component mounted and DOM is ready!");
 
-        
+    const detectMobile = window.matchMedia('(min-width: 768px)').matches;
+    if (detectMobile) {
+      setTimeout(() => {
+        setIsClosed(false);
+      });
+    }
   }, []); 
 
   const handleDeviceSize = () => {
-    const detectMobile = window.matchMedia('(max-width: 768px)').matches;
-    if (detectMobile) {
-      setTimeout(() => {
-        setIsClosed(true);
-      });
-    }
+    
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -212,7 +212,8 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex w-full h-screen" onLoad={handleDeviceSize}>
+    <div className="flex w-full h-screen">
+    {/* <div className="flex w-full h-screen" onLoad={handleDeviceSize}> */}
       {/* <div className="w-80 bg-white border-r border-gray-200 flex flex-col"> */}
       <div
         // className={`fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 flex flex-col
