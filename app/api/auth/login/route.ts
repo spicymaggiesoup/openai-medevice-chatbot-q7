@@ -1,5 +1,5 @@
-import { login } from "@/lib/proxy";
+import { LOGIN } from "@/lib/proxy";
 
 export async function POST(req: Request) {
-  return login(req);
+  return LOGIN(req);
 }

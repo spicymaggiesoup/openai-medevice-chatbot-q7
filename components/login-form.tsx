@@ -27,23 +27,23 @@ export function LoginForm() {
       setError(`아이디나 비밀번호를 다시 확인해주세요.`);
     }
 
-    const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    const getAuthResponse = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
   
     try {
       const {
         user,
         token_type,
         access_token,
-      } = await res.json();
+      } = await getAuthResponse.json();
 
       console.log('[login-form] Login Info', user);
 
       // 토큰 상태관리
-      useChatToken.getState().setChatToken(`${token_type} ${access_token}`);
+      useChatToken.getState().setChatToken(`${access_token}`);
 
       // Store login state (simple localStorage for demo)
       localStorage.setItem("isLoggedIn", "true");
@@ -52,17 +52,18 @@ export function LoginForm() {
       // chat 이동
       router.push("/chat");
 
-      setIsLoading(false)
+      setIsLoading(false);
+
     } catch(e) {
-    
       await new Promise((resolve) => setTimeout(resolve, 1000))
       setError(`계정정보가 잘못되었습니다. 아이디와 비밀번호를 다시 확인해주세요. ID: ${email}, Password: ${password}`)
+
     }
   }
 
   return (
     <Card className="w-full">
-      {/* <CardHeader className="text-center space-y-4">
+      <CardHeader className="text-center space-y-4">
         <div className="flex justify-center mb-0">
           <MediLogo />
         </div>
@@ -72,7 +73,7 @@ export function LoginForm() {
             당신의 건강 보조도우미
           </CardDescription>
         </div>
-      </CardHeader> */}
+      </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -102,18 +103,11 @@ export function LoginForm() {
           {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
           <Button
             type="submit"
-            className="w-full bg-white text-primary-foreground"
-            disabled={isLoading}
-          >
-            {isLoading ? "로그인 중..." : "로그인"}
-          </Button>
-          {/* <Button
-            type="submit"
             className="w-full bg-emerald-600 hover:bg-emerald/90 text-primary-foreground"
             disabled={isLoading}
           >
             {isLoading ? "로그인 중..." : "로그인"}
-          </Button> */}
+          </Button>
         </form>
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">

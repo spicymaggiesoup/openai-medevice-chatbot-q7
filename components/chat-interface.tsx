@@ -3,6 +3,10 @@
 import type React from "react"
 import type { MouseEvent } from "react"
 import { useState, useEffect, useRef } from "react"
+
+import { redirect } from "next/navigation";
+import { useChatToken } from "@/lib/store";
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MediBot } from "@/components/medi-bot"
@@ -48,9 +52,10 @@ export function ChatInterface() {
   const [symptomsA, setSymptomsA] = useState(0)
   const [searchQ, setSearchQ] = useState(0)
   const [searchA, setSearchA] = useState(0)
-
+  const [rooms, setRooms] = useState<any>(null);
   const typingRef = useRef(null);
 
+  const token = useChatToken((s) => s.chatToken);
 
   const handleInnerSize = () => window.innerWidth <= 768;
 
@@ -60,7 +65,38 @@ export function ChatInterface() {
         setIsClosed(false);
       });
     }
-  }, []); 
+
+    let cancelled = false;
+    if (!token) {
+      redirect("/");
+    }
+
+    (async () => {
+      try {
+        const getChatRooms = await fetch("/api/chat/rooms", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        const chatRooms = await getChatRooms.json();
+
+        if (!cancelled) {
+          console.log("[chat-interface] chatroom status", chatRooms);
+          setRooms(chatRooms);
+        }
+    
+      } catch (err) {
+        console.error("로그인불가");
+        redirect("/");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
