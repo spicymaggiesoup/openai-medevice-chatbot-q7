@@ -9,8 +9,11 @@ import { useChatToken } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { MediBot } from "@/components/medi-bot"
 import { MediLogo } from "@/components/medi-logo"
+import { AccountForm } from "@/components/account-form"
+
 import { IconMenu } from "@/components/icon-menu"
 import { IconSettings } from "@/components/icon-settings"
 import { MapLayout } from "@/components/map-layout"
@@ -43,6 +46,7 @@ export function ChatInterface() {
   const [isClosed, setIsClosed] = useState(true)
   const [activeTab, setActiveTab] = useState("증상 문의")
   const [showMap, setShowMap] = useState(false)
+  const [showAccountForm, setShowAccountForm] = useState(false)
 
   const [age, setAge] = useState("73")
   const [sex, setSex] = useState("남성")
@@ -266,28 +270,48 @@ export function ChatInterface() {
             </div>
             <div className="flex items-center gap-4">
               {/* <span className="flex items-center gap-2 mt-1 text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full"> */}
+              <Popover open={showAccountForm} onOpenChange={setShowAccountForm}>
+                <PopoverTrigger asChild>
+                  <div
+                      onClick={() => {
+                        console.log("[v0] Healthcare provider link clicked")
+                        setShowAccountForm(true)
+                      }}
+                      className="cursor-pointer"
+                    >
+                    <IconSettings /> 
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-96 p-0 max-h-96 overflow-y-auto"
+                  align="center"
+                  side="top"
+                  sideOffset={15}
+                  >
+                  <AccountForm
+                    onClose={() => {
+                      console.log("[v0] Closing account form")
+                      setShowAccountForm(false)
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
               <span
                  onClick={handleManageInfo}
                 className="cursor-pointer flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full"
               >
-                <div className="flex items-center gap-1">
-                  <div className={`w-2 h-2 rounded-full bg-${sex === "여성" ? "red" : "blue"}-500`}></div>
-                  <div>{sex} </div>
-                </div>
-                <div>{age}세 </div>
                 <div>{patName}</div>
-                {/*<div
-                  onClick={handleManageInfo}
-                  className="cursor-pointer"
-                >
-                   <IconSettings /> 
-                </div>*/}
+                <div>{age}세 </div>
+                <div className="flex items-center gap-2">
+                  <div>{sex} </div>
+                  <div className={`w-2 h-2 rounded-full bg-${sex === "여성" ? "red" : "blue"}-500`}></div>
+                </div>
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
+                className="cursor-pointer flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
               >
                 <LogOut className="w-4 h-4" />
                 Logout

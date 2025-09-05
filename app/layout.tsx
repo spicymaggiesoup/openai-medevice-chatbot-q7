@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 
 
 const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAOJSKEY;
-const KAKAO_API = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&libraries=services,clusterer&autoload=false`
+const KAKAO_API = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&libraries=services,clusterer&autoload=false`;
+const DAUM_POSTCODE = `//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js`;
 
 export default function RootLayout({
   children,
@@ -29,6 +30,7 @@ export default function RootLayout({
         {children}
         {/* </WSProvider > */}
         <Script src={KAKAO_API} strategy="beforeInteractive" />
+        <Script src={DAUM_POSTCODE} strategy="beforeInteractive" />
       </body>
     </html>
   )

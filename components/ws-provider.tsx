@@ -1,4 +1,5 @@
 ///보관용
+/*
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -114,3 +115,4 @@ export function WSProvider({ children, userId, token }: Props) {
 export function useWS() {
   return useContext(WSContext);
 }
+*/
