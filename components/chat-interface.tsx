@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input"
 import { MediBot } from "@/components/medi-bot"
 import { MediLogo } from "@/components/medi-logo"
 import { IconMenu } from "@/components/icon-menu"
+import { IconSettings } from "@/components/icon-settings"
 import { MapLayout } from "@/components/map-layout"
+import { messageScenario } from "@/lib/template"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
 interface Message {
@@ -18,76 +20,6 @@ interface Message {
   timestamp: Date
   type?: "text" | "button-check" | "map"
   buttons?: string[]
-}
-
-const messageScenario = {
-  user: [],
-  bot: {
-    symptoms: {
-      Q: [
-
-      ],
-      A: [
-        // {
-        //   id: (Date.now() + 1).toString(),
-        //   content: "불편한 증상을 구체적으로 말씀해주시면, 질병에 맞는 병원을 추천드릴게요. 😊",
-        //   sender: "bot",
-        //   timestamp: new Date(),
-        //   type: "text",
-        // },
-        {
-          id: (Date.now() + 1).toString(),
-          content: ["말씀하신 증상으로 예측했을 때...", "'진료과'에 방문하셔야할 것 같아요."],
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: ["사용자 정보를 기반으로", "'진료과'의 진료를 볼 수 있는 병원을 추천해드릴까요?"],
-          sender: "bot",
-          timestamp: new Date(),
-          type: "button-check",
-          buttons: ["네, 추천해주세요.", "아니요, 괜찮아요."],
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: ["또 불편한 증상이 있을 때, 말씀해주세요."],
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          content: ["언제든 가야할 병원을 바로 추천해 드릴게요. 🙌"],
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-      ],
-    },
-    search: {
-      Q: [
-        {
-          id: (Date.now() + 1).toString(),
-          content: ["'진료과'를 볼 수 있는 병원 목록이에요. 🏥", "👉박창수안과의원"],
-          sender: "bot",
-          timestamp: new Date(),
-          type: "map",
-          location: [],
-        },
-      ],
-      A: [
-        {
-          id: (Date.now() + 1).toString(),
-          content: ["네, 알겠습니다.😊", "또 불편한 부분이 있으면 말씀해주세요."],
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        },
-      ],
-    },
-  },
 }
 
 export function ChatInterface() {
@@ -118,6 +50,7 @@ export function ChatInterface() {
   const [searchA, setSearchA] = useState(0)
 
   const typingRef = useRef(null);
+
 
   const handleInnerSize = () => window.innerWidth <= 768;
 
@@ -172,6 +105,12 @@ export function ChatInterface() {
       setActiveTyping(true)
 
       const getReplyMessage = () => {
+        if (_message.includes('예측')) {
+          return Object.assign(userMessage, {
+            content: ['']
+          });
+        }
+
         if (_message.includes('네')) {
           setActiveTyping(false);
           return messageScenario.bot.search.Q[searchQ];
@@ -224,6 +163,10 @@ export function ChatInterface() {
       type: "text",
     }
     setMessages((prev) => [...prev, locationMessage])
+  }
+
+  const handleManageInfo = () => {
+
   }
 
   return (
@@ -287,13 +230,22 @@ export function ChatInterface() {
             </div>
             <div className="flex items-center gap-4">
               {/* <span className="flex items-center gap-2 mt-1 text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full"> */}
-              <span className="flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full">
+              <span
+                 onClick={handleManageInfo}
+                className="cursor-pointer flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full"
+              >
                 <div className="flex items-center gap-1">
                   <div className={`w-2 h-2 rounded-full bg-${sex === "여성" ? "red" : "blue"}-500`}></div>
                   <div>{sex} </div>
                 </div>
                 <div>{age}세 </div>
                 <div>{patName}</div>
+                {/*<div
+                  onClick={handleManageInfo}
+                  className="cursor-pointer"
+                >
+                   <IconSettings /> 
+                </div>*/}
               </span>
               <Button
                 variant="outline"

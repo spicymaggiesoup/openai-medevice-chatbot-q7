@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation";
+import { useChatToken } from "@/lib/store";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,53 +12,57 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MediLogo } from "@/components/medi-logo"
 
 export function LoginForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [email, setEmail] = useState("user@example.com");
+  const [password, setPassword] = useState("string");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
-
-    const data = await fetch("/api/users")   // GET: proxy
-    console.log("/api/users", data);
-
+    
     if (!email.length || !password.length!) {
       setError(`아이디나 비밀번호를 다시 확인해주세요.`);
-    } 
+    }
 
-    // Check for admin credentials
-    if ((email === "test1@test.com" && password === "test1234") || (email === "admin" && password === "admin1234")) {
-      
-      // Simulate authentication delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+    const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+  
+    try {
+      const {
+        user,
+        token_type,
+        access_token,
+      } = await res.json();
+
+      console.log('[login-form] Login Info', user);
+
+      // 토큰 상태관리
+      useChatToken.getState().setChatToken(`${token_type} ${access_token}`);
 
       // Store login state (simple localStorage for demo)
-      localStorage.setItem("isLoggedIn", "true")
-      localStorage.setItem("userId", "admin")
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userId", user.id);
 
-      // Redirect to chat
-      window.location.href = "/chat"
-    } else {
-      // Show error for invalid credentials
+      // chat 이동
+      router.push("/chat");
+
+      setIsLoading(false)
+    } catch(e) {
+    
       await new Promise((resolve) => setTimeout(resolve, 1000))
       setError(`계정정보가 잘못되었습니다. 아이디와 비밀번호를 다시 확인해주세요. ID: ${email}, Password: ${password}`)
     }
-
-    setIsLoading(false)
   }
-
-  const handleEchoTest = async (e: React.FormEvent) => {
-    const data = await fetch("/api/echo")   // GET: proxy
-
-    console.log("/api/echo", data);
-  };
 
   return (
     <Card className="w-full">
-      <CardHeader className="text-center space-y-4">
+      {/* <CardHeader className="text-center space-y-4">
         <div className="flex justify-center mb-0">
           <MediLogo />
         </div>
@@ -66,7 +72,7 @@ export function LoginForm() {
             당신의 건강 보조도우미
           </CardDescription>
         </div>
-      </CardHeader>
+      </CardHeader> */}
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -96,18 +102,24 @@ export function LoginForm() {
           {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
           <Button
             type="submit"
-            className="w-full bg-emerald-600 hover:bg-emerald/90 text-primary-foreground"
+            className="w-full bg-white text-primary-foreground"
             disabled={isLoading}
           >
             {isLoading ? "로그인 중..." : "로그인"}
           </Button>
+          {/* <Button
+            type="submit"
+            className="w-full bg-emerald-600 hover:bg-emerald/90 text-primary-foreground"
+            disabled={isLoading}
+          >
+            {isLoading ? "로그인 중..." : "로그인"}
+          </Button> */}
         </form>
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             계정이 없으면{" "}
             <button 
               className="text-green-700 hover:font-semibold"
-              onClick={handleEchoTest}
             >회원가입을 진행하세요.
             </button>
           </p>

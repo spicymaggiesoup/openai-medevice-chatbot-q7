@@ -3,12 +3,15 @@ import Script from 'next/script'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
+// import { SocketProvider } from "@/components/socket-provider";
+// import { WSProvider } from "@/components/ws-provider";
 
 export const metadata: Metadata = {
   title: 'MediBot',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  description: '',
+  generator: '',
 }
+
 
 const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAOJSKEY;
 const KAKAO_API = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&libraries=services,clusterer&autoload=false`
@@ -22,8 +25,9 @@ export default function RootLayout({
     <html lang="en">
       <head />
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        {/* <WSProvider userId={userId} token={token}> */}
         {children}
-        {/* App Router에서는 NextScript/Main 사용 X */}
+        {/* </WSProvider > */}
         <Script src={KAKAO_API} strategy="beforeInteractive" />
       </body>
     </html>
