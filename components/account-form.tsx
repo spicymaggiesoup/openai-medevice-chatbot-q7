@@ -68,7 +68,7 @@ export function AccountForm({ onClose }: AccountFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="fullName">성명 (닉네임)</Label>
+              <Label htmlFor="fullName" className="flex items-center gap-2">성명 (닉네임)</Label>
               <Input
                 id="fullName"
                 name="fullName"
@@ -159,18 +159,18 @@ export function AccountForm({ onClose }: AccountFormProps) {
               />
             </div>
             <div>
-            <Label htmlFor="password" className="flex items-center gap-2">
-              비밀번호
-            </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              className="mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
-            />
+              <Label htmlFor="password" className="flex items-center gap-2">
+                비밀번호
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                className="mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
+              />
             </div>
           </div>
 

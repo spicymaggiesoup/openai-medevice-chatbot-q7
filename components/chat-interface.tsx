@@ -5,7 +5,10 @@ import type { MouseEvent } from "react"
 import { useState, useEffect, useRef } from "react"
 
 import { redirect } from "next/navigation";
-import { useChatToken } from "@/lib/store";
+
+//import Hanspell  from "hanspell";
+
+import { useChatToken, useMedicalDepartments } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,28 +20,35 @@ import { AccountForm } from "@/components/account-form"
 import { IconMenu } from "@/components/icon-menu"
 import { IconSettings } from "@/components/icon-settings"
 import { MapLayout } from "@/components/map-layout"
-import { messageScenario } from "@/lib/template"
+import { chatInterfaceTemplate } from "@/lib/template"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
+
+type Sender = "user" | "bot";
 
 interface Message {
   id: string
   content: string[]
-  sender: "user" | "bot"
+  sender: 'bot' | 'sender'
   timestamp: Date
-  type?: "text" | "button-check" | "map"
+  type: "text" | "button-check" | "map"
   buttons?: string[]
 }
 
+//과정 진행과 동일
+// const {
+//   welcome,
+//   evaluating,
+//   high_eval,
+//   low_eval,
+//   recommend,
+//   hospitals,
+//   adios,
+// } = chatInterfaceTemplate;
+const INTERFACE_TEMPLATE: any = chatInterfaceTemplate;
+const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "hospitals", "adios"];
+
 export function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content: ["안녕하세요? 불편한 증상을 말씀해주세요. 😊"],
-      sender: "bot",
-      timestamp: new Date(),
-      type: "text",
-    },
-  ])
+  const typingRef = useRef(null);
 
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
@@ -52,29 +62,41 @@ export function ChatInterface() {
   const [sex, setSex] = useState("남성")
   const [patName, setPatName] = useState("김환자")
 
-  const [symptomsQ, setSymptomsQ] = useState(0)
-  const [symptomsA, setSymptomsA] = useState(0)
-  const [searchQ, setSearchQ] = useState(0)
-  const [searchA, setSearchA] = useState(0)
   const [rooms, setRooms] = useState<any>(null);
-  const typingRef = useRef(null);
+
+  const [messageStep, setMessageStep] = useState(0);
+  const [evaluateScore, setEvaluateScore] = useState(95);  //모델지표의 평균값
+  const [incorrectMessageRate, setIncorrectMessageRate] = useState("");
+  
+  const [messages, setMessages] = useState<any[]>([
+    Object.assign(
+      ((_welcomes) => _welcomes[Math.floor(Math.random() * (_welcomes.length))])(INTERFACE_TEMPLATE.welcome()),
+      { timestamp: new Date() },
+    ),
+  ]);
 
   const token = useChatToken((s) => s.chatToken);
 
   const handleInnerSize = () => window.innerWidth <= 768;
 
   useEffect(() => {
+    // 메시지 스텝 +1 (welcome 다음)
+    setMessageStep(messageStep + 1);
+
+    // 화면크기 감지 후 반응
     if (window.matchMedia('(min-width: 768px)').matches) {
       setTimeout(() => {
         setIsClosed(false);
       });
     }
 
+    // 토큰 확인
     let cancelled = false;
     if (!token) {
       redirect("/");
     }
 
+    // chat rooms 조회
     (async () => {
       try {
         const getChatRooms = await fetch("/api/chat/rooms", {
@@ -95,6 +117,10 @@ export function ChatInterface() {
         console.error("로그인불가");
         redirect("/");
       }
+
+      // 임시 deptnm
+      useMedicalDepartments.getState().setDepartment("내과");
+      
     })();
 
     return () => {
@@ -102,37 +128,82 @@ export function ChatInterface() {
     };
   }, []);
 
+  const incorrectSpellCheck = (text: string) => {
+    // Hanspell.check(text, (err: string, result: string[]) => {
+    //   if (err) return console.error(err);
+
+    //   const totalWords = text.split(/\s+/).length;
+    //   const errorWords = result.length; // hanspell이 반환하는 교정 제안 개수
+    //   const errorRate = ((errorWords / totalWords) * 100).toFixed(2);
+
+    //   console.log(`오타율: ${errorRate}%`);
+    //   setIncorrectMessageRate(errorRate);
+    // });
+  };
+
+  const getMessage = (_step: any) => 
+    ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step]());
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputMessage.trim()) return
 
-    const userMessage: Message = {
+    // 입력여부 확인
+    if (!inputMessage.trim()) return;
+
+    const userMessage: any = {
       id: Date.now().toString(),
+      timestamp: new Date(),
       content: [inputMessage],
       sender: "user",
-      timestamp: new Date(),
-    }
+    };
 
-    setMessages((prev) => [...prev, userMessage])
-    setInputMessage("")
-    setIsTyping(true)
-    setActiveTyping(true)
+    console.log('[chart-interface] inputMessage:: ', inputMessage);
+
+    // 오타율 검사(말이되는 말(한글)인지)
+    //incorrectSpellCheck(inputMessage);
+     
+    //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
+    setMessageStep(messageStep + 1);
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
+    setIsTyping(true);
+    setActiveTyping(true);
 
     // Simulate bot response
-    setTimeout(() => {
-      const botMessage: any = Object.assign(messageScenario.bot.symptoms.A[symptomsA], {
-        id: Date.now().toString()
+    setTimeout(() => {      
+      const returnMessage = {};
+
+      // 오타율이 너무 높으면 다시 써달라고 하기 (low-eval)
+      if (Number(incorrectMessageRate) >= 50) {
+        Object.assign(returnMessage, {
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          content: getMessage("low_eval"),
+          sender: "bot"
+        });
+      }
+
+      // 다음에 보일 메시지 체크
+      let _step = MESSAGE_SCENARIO[messageStep];
+
+      // 평가결과..
+      if (_step instanceof Array) {
+        _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
+      }
+
+      Object.assign(returnMessage, getMessage(_step), {
+          id: Date.now().toString(),
+          timestamp: new Date(),
       });
 
-      setSymptomsA(symptomsA + 1);
-      setMessages((prev) => [...prev, botMessage])
+      setMessages((prev) => [...prev, returnMessage])
       setIsTyping(false)
       setActiveTyping(false)
     }, 1500)
   }
 
   const handleButtonClick = (_message: string) => {
-    const userMessage: Message = {
+    const userMessage: any = {
       id: Date.now().toString(),
       content: [_message],
       sender: "user",
@@ -152,13 +223,14 @@ export function ChatInterface() {
         }
 
         if (_message.includes('네')) {
+          setMessageStep(messageStep + 1);
           setActiveTyping(false);
-          return messageScenario.bot.search.Q[searchQ];
+          return getMessage("hospitals");
         }
 
         if (_message.includes('아니요')) {
           setActiveTyping(false);
-          return messageScenario.bot.search.A[searchA];
+          return getMessage("adios");
         }
 
         return Object.assign(userMessage, {
@@ -169,12 +241,12 @@ export function ChatInterface() {
       // Simulate bot response
       setTimeout(() => {
         const botMessage: any = Object.assign(getReplyMessage(), {
-            id: Date.now().toString()
+          id: Date.now().toString(),
+          timestamp: new Date(),
         });
 
-        setIsTyping(false)
-        setSymptomsA(searchQ + 1);
         setMessages((prev) => [...prev, botMessage])
+        setIsTyping(false)
     }, 1500);
   }
 
@@ -197,7 +269,7 @@ export function ChatInterface() {
     const locationMessage: Message = {
       id: Date.now().toString(),
       content:
-        ["I've found some nearby healthcare facilities for you. You can view them on the map below and get directions to any of them."],
+        [""],
       sender: "bot",
       timestamp: new Date(),
       type: "text",
@@ -348,13 +420,13 @@ export function ChatInterface() {
                       message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
                     }`}
                   >
-                    {message.content.map((_message, order) => (
+                    {message.content.map((_message: string, order: any) => (
                       <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
                     ))}
 
                     {message.type === "button-check" && message.buttons && (
                       <div className="flex flex-wrap gap-2 mt-4">
-                        {message.buttons.map((_button) => (
+                        {message.buttons.map((_button: any) => (
                           <Button
                             key={_button}
                             variant="outline"

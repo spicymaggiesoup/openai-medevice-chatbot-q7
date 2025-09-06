@@ -8,3 +8,11 @@ export const useChatToken = create<{
   chatToken: undefined,
   setChatToken: (v) => set({ chatToken: v }),
 }));
+
+export const useMedicalDepartments= create<{
+    department?: string;
+    setDepartment: (v: string) => void;
+}>((set) => ({
+  department: undefined,
+  setDepartment: (v) => set({ department: v }),
+}));
