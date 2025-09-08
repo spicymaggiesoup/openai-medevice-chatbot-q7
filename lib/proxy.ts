@@ -107,3 +107,37 @@ export async function CHAT(req: Request) {
     return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
   }
 }
+
+export async function LOCATION(req: Request) {
+  try {
+    // 1) 루프 방지: 잘못된 설정이면 바로 차단
+    const origin = req.headers.get("origin") || "";
+    if (!API_BASE) {
+      return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+    }
+
+    if (origin && API_BASE.startsWith(origin)) {
+      // 같은 오리진을 찍고 있으면 자기 자신 호출 루프 가능성 ↑
+      return NextResponse.json({ ok: false, error: "API_BASE misconfigured (points to this app)" }, { status: 500 });
+    }
+
+    // 2) 필요한 헤더만 전달 (대부분 Authorization만)
+    const body = await req.json();
+    const r = await fetch(`${API_BASE}/api/users/location`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const j = await r.json();
+    const res = NextResponse.json(j, { status: r.status });
+
+    return res;
+
+  } catch (err) {
+    console.error("Proxy GET /api/users/location error:", err);
+    return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
+  }
+}

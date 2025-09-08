@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation";
-import { useChatToken } from "@/lib/store";
+import { useChatToken, useUserInfo, useUserLocationNew } from "@/lib/store";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,10 +40,20 @@ export function LoginForm() {
         access_token,
       } = await getAuthResponse.json();
 
-      console.log('[login-form] Login Info', user);
+      console.log('[login-form] Login Info :: ', user);
 
       // 토큰 상태관리
       useChatToken.getState().setChatToken(`${access_token}`);
+
+      // 사용자 정보 저장
+      useUserInfo.getState().setNickname(`${user.nickname}`);
+      useUserInfo.getState().setEmail(`${user.email}`);
+      useUserInfo.getState().setPassword(`${password}`);
+      useUserInfo.getState().setAge(`${user.age}`);
+      useUserInfo.getState().setGender(`${user.gender}`);
+      useUserInfo.getState().setLocation(`${user.location}`);
+      useUserInfo.getState().setAddress(`${user.road_address}` || '');
+      useUserLocationNew.getState().setAddress(user.road_address || '');
 
       // Store login state (simple localStorage for demo)
       localStorage.setItem("isLoggedIn", "true");

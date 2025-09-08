@@ -58,9 +58,9 @@ export function ChatInterface() {
   const [showMap, setShowMap] = useState(false)
   const [showAccountForm, setShowAccountForm] = useState(false)
 
-  const [age, setAge] = useState("73")
-  const [gender, setGender] = useState("남성")
-  const [nickName, setNickName] = useState("김환자")
+  const [age, setAge] = useState(useUserInfo((s) => s.age));
+  const [gender, setGender] = useState(useUserInfo((s) => s.gender));
+  const [nickName, setNickName] = useState(useUserInfo((s) => s.nickname));
 
   const [rooms, setRooms] = useState<any>(null);
 
@@ -108,7 +108,7 @@ export function ChatInterface() {
       sender: "user",
     };
 
-    console.log('[chart-interface] inputMessage:: ', inputMessage);
+    console.log('[chart-interface] inputMessage :: ', inputMessage);
 
     // 오타율 검사(말이되는 말(한글)인지)
     //incorrectSpellCheck(inputMessage);
@@ -263,41 +263,7 @@ export function ChatInterface() {
 
         if (!cancelled) {
           console.log("[chat-interface] chatroom status ::", chatRooms);
-          setRooms(chatRooms);
-
-          try {
-            const getAuthMyInfo = await fetch("/api/auth/me", {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-              },
-            });
-  
-            const userInfo: {
-              nickname: string,
-              email: string,
-              age: string,
-              gender: string,
-              latitude: number,
-              longitude: number,
-            } = await getAuthMyInfo.json();
-  
-            console.log("[chat-interface] user info ::", userInfo);
-
-            // set 나이, 성별, 환자명
-            setAge(userInfo.age);
-            setGender(userInfo.gender);
-            setNickName(userInfo.nickname);
-
-            // 사용자정보 저장
-            useUserInfo.getState().setEmail(userInfo.email);
-            useUserInfo.getState().setLocation(`${userInfo.latitude},${userInfo.longitude}`);
-
-          } catch (e) {
-            console.log(e);
-          }
-          
+          setRooms(chatRooms);          
         }
     
       } catch (err) {
@@ -402,7 +368,7 @@ export function ChatInterface() {
               </Popover>
               <span
                  onClick={handleManageInfo}
-                className="cursor-pointer flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full"
+                className="flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full"
               >
                 <div>{nickName}</div>
                 <div>{age}세 </div>

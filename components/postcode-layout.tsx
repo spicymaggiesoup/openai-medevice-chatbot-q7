@@ -2,14 +2,20 @@
 
 import type React from "react"
 import { useState } from "react"
+
 import { useDisclosure } from "@chakra-ui/react";
+
 import DaumPostcode, { type Address } from "react-daum-postcode";
+
+import { User, Mail, Phone, Calendar, MapPin, Search } from "lucide-react"
+
+import { useUserInfo, useUserLocationNew } from "@/lib/store";
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 //import { Modal } from "@/components/ui/modal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, Mail, Phone, Calendar, MapPin, Search } from "lucide-react"
 
 type PostcodeLayoutProps = {
   onCompletePost?: (data: Address) => void;
@@ -36,9 +42,11 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
 
   const onCompletePost = (data: Address) => {
-    setAddress(data.address);        // 도로명/지번 등 라이브러리가 가공한 최종 주소
-    setShowDetailAddressInput(true); // 상세주소 입력칸 표시
-    onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
+    console.log(data);
+    useUserLocationNew.getState().setAddress(data.roadAddress);
+    //setAddress(data.roadAddress);        // 도로명/지번 등 라이브러리가 가공한 최종 주소
+    //setShowDetailAddressInput(true); // 상세주소 입력칸 표시
+    //onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
   }; 
 
   return (
@@ -64,7 +72,7 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
         <DaumPostcode
           className="h-[70vh] max-h-[80vh]"
           style={{height:'100%'}}
-          autoClose={true}
+          autoClose={false}
           onComplete={onCompletePost}
         />
       </CardContent>
