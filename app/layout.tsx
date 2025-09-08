@@ -7,7 +7,7 @@ import './globals.css'
 // import { WSProvider } from "@/components/ws-provider";
 
 export const metadata: Metadata = {
-  title: 'MediBot',
+  title: 'MeDevise Seocho',
   description: '',
   generator: '',
 }

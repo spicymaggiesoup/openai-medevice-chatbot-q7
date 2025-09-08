@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 
 //import Hanspell  from "hanspell";
 
-import { useChatToken, useMedicalDepartments } from "@/lib/store";
+import { useChatToken, useUserInfo, useMedicalDepartments } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,8 +59,8 @@ export function ChatInterface() {
   const [showAccountForm, setShowAccountForm] = useState(false)
 
   const [age, setAge] = useState("73")
-  const [sex, setSex] = useState("남성")
-  const [patName, setPatName] = useState("김환자")
+  const [gender, setGender] = useState("남성")
+  const [nickName, setNickName] = useState("김환자")
 
   const [rooms, setRooms] = useState<any>(null);
 
@@ -78,55 +78,6 @@ export function ChatInterface() {
   const token = useChatToken((s) => s.chatToken);
 
   const handleInnerSize = () => window.innerWidth <= 768;
-
-  useEffect(() => {
-    // 메시지 스텝 +1 (welcome 다음)
-    setMessageStep(messageStep + 1);
-
-    // 화면크기 감지 후 반응
-    if (window.matchMedia('(min-width: 768px)').matches) {
-      setTimeout(() => {
-        setIsClosed(false);
-      });
-    }
-
-    // 토큰 확인
-    let cancelled = false;
-    if (!token) {
-      redirect("/");
-    }
-
-    // chat rooms 조회
-    (async () => {
-      try {
-        const getChatRooms = await fetch("/api/chat/rooms", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        const chatRooms = await getChatRooms.json();
-
-        if (!cancelled) {
-          console.log("[chat-interface] chatroom status", chatRooms);
-          setRooms(chatRooms);
-        }
-    
-      } catch (err) {
-        console.error("로그인불가");
-        redirect("/");
-      }
-
-      // 임시 deptnm
-      useMedicalDepartments.getState().setDepartment("내과");
-      
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const incorrectSpellCheck = (text: string) => {
     // Hanspell.check(text, (err: string, result: string[]) => {
@@ -281,6 +232,89 @@ export function ChatInterface() {
 
   }
 
+  useEffect(() => {
+    // 메시지 스텝 +1 (welcome 다음)
+    setMessageStep(messageStep + 1);
+
+    // 화면크기 감지 후 반응
+    if (window.matchMedia('(min-width: 768px)').matches) {
+      setTimeout(() => {
+        setIsClosed(false);
+      });
+    }
+
+    // 토큰 확인
+    let cancelled = false;
+    if (!token) {
+      redirect("/");
+    }
+
+    // chat rooms 조회
+    (async () => {
+      try {
+        const getChatRooms = await fetch("/api/chat/rooms", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        const chatRooms = await getChatRooms.json();
+
+        if (!cancelled) {
+          console.log("[chat-interface] chatroom status ::", chatRooms);
+          setRooms(chatRooms);
+
+          try {
+            const getAuthMyInfo = await fetch("/api/auth/me", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+            });
+  
+            const userInfo: {
+              nickname: string,
+              email: string,
+              age: string,
+              gender: string,
+              latitude: number,
+              longitude: number,
+            } = await getAuthMyInfo.json();
+  
+            console.log("[chat-interface] user info ::", userInfo);
+
+            // set 나이, 성별, 환자명
+            setAge(userInfo.age);
+            setGender(userInfo.gender);
+            setNickName(userInfo.nickname);
+
+            // 사용자정보 저장
+            useUserInfo.getState().setEmail(userInfo.email);
+            useUserInfo.getState().setLocation(`${userInfo.latitude},${userInfo.longitude}`);
+
+          } catch (e) {
+            console.log(e);
+          }
+          
+        }
+    
+      } catch (err) {
+        console.error("로그인불가");
+        redirect("/");
+      }
+
+      // 임시 deptnm
+      useMedicalDepartments.getState().setDepartment("내과");
+      
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="flex w-full h-screen">
       <div
@@ -298,7 +332,7 @@ export function ChatInterface() {
                   <MediLogo />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">MediBot</h1>
+              <h1 className="text-2xl font-bold text-gray-900">MeDevise</h1>
             </div>
           </div>
 
@@ -346,7 +380,6 @@ export function ChatInterface() {
                 <PopoverTrigger asChild>
                   <div
                       onClick={() => {
-                        console.log("[v0] Healthcare provider link clicked")
                         setShowAccountForm(true)
                       }}
                       className="cursor-pointer"
@@ -362,7 +395,6 @@ export function ChatInterface() {
                   >
                   <AccountForm
                     onClose={() => {
-                      console.log("[v0] Closing account form")
                       setShowAccountForm(false)
                     }}
                   />
@@ -372,11 +404,11 @@ export function ChatInterface() {
                  onClick={handleManageInfo}
                 className="cursor-pointer flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full"
               >
-                <div>{patName}</div>
+                <div>{nickName}</div>
                 <div>{age}세 </div>
                 <div className="flex items-center gap-2">
-                  <div>{sex} </div>
-                  <div className={`w-2 h-2 rounded-full bg-${sex === "여성" ? "red" : "blue"}-500`}></div>
+                  <div>{gender} </div>
+                  <div className={`w-2 h-2 rounded-full bg-${gender === "여성" ? "red" : "blue"}-500`}></div>
                 </div>
               </span>
               <Button
@@ -514,7 +546,7 @@ export function ChatInterface() {
                 ref={typingRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="MediBot에게 물어보세요!"
+                placeholder="MeDevise에게 문의하세요."
                 className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
                 disabled={activeTyping}
               />

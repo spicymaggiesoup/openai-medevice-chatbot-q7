@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDisclosure } from "@chakra-ui/react";
 import { type Address } from "react-daum-postcode";
 import { Button } from "@/components/ui/button"
@@ -54,7 +54,11 @@ export function AccountForm({ onClose }: AccountFormProps) {
     setAddress(data.address);        // 도로명/지번 등 라이브러리가 가공한 최종 주소
     setShowDetailAddressInput(true); // 상세주소 입력칸 표시
     onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
-  }; 
+  };
+
+  useEffect(() => {
+    
+  }, []);
 
   return (
     <Card className="w-full max-w-md">
@@ -68,7 +72,7 @@ export function AccountForm({ onClose }: AccountFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="fullName" className="flex items-center gap-2">성명 (닉네임)</Label>
+              <Label htmlFor="fullName" className="flex items-center gap-2">성명/닉네임</Label>
               <Input
                 id="fullName"
                 name="fullName"

@@ -68,7 +68,7 @@ export function LoginForm() {
           <MediLogo />
         </div>
         <div>
-          <CardTitle className="text-2xl font-bold text-foreground">MediBot</CardTitle>
+          <CardTitle className="text-2xl font-bold text-foreground">MeDevise</CardTitle>
           <CardDescription className="text-muted-foreground">
             당신의 건강 보조도우미
           </CardDescription>

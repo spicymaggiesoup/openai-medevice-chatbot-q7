@@ -37,7 +37,7 @@ export function SideMenu() {
                 <MediLogo />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">MediBot</h1>
+            <h1 className="text-2xl font-bold text-gray-900">MeDevise Seocho</h1>
           </div>
         </div>
 
