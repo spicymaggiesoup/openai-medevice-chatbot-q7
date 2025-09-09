@@ -25,13 +25,13 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ onClose }: AccountFormProps) {
-
+  const handleUserAddress = () => useUserLocationNew((s) => s.address);
   const [formData, setFormData] = useState({
     nickName: useUserInfo((s) => s.nickname),
     email: useUserInfo((s) => s.email),
     gender: useUserInfo((s) => s.gender),
     age: useUserInfo((s) => s.age),
-    address: useUserLocationNew((s) => s.address),
+    address: handleUserAddress(),
     password: useUserInfo((s) => s.password),
   });
 
@@ -51,10 +51,13 @@ export function AccountForm({ onClose }: AccountFormProps) {
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
 
-    const getUsersLocation = await fetch("/api/auth/login", {
-      method: "POST",
+    const newAddress = handleUserAddress();
+    console.log('콘솔 formData.address::', newAddress);
+
+    const getUsersLocation = await fetch("/api/users/location", {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ road_address: formData.address }),
+      body: JSON.stringify({ road_address: newAddress }),
     });
 
     const userLocation = await getUsersLocation.json();

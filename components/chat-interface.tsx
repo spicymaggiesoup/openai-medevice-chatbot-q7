@@ -23,28 +23,24 @@ import { MapLayout } from "@/components/map-layout"
 import { chatInterfaceTemplate } from "@/lib/template"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
-type Sender = "user" | "bot";
+type WelcomTemlate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
+type EvaluatingTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; nextConnect: boolean;}[];
+type ScoreHighTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
+type ScoreLowTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
+type RecommendTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; buttons: string[]; buttonsCallback: any[]; }[];
+type HospitalsTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; location: string[]; }[];
+type AdiosTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
 
-interface Message {
-  id: string
-  content: string[]
-  sender: 'bot' | 'sender'
-  timestamp: Date
-  type: "text" | "button-check" | "map"
-  buttons?: string[]
-}
+const INTERFACE_TEMPLATE: any /*{
+  welcome: WelcomTemlate;
+  evaluating: EvaluatingTemplate;
+  score_high: ScoreHighTemplate;
+  score_low: ScoreLowTemplate;
+  recommend: RecommendTemplate;
+  hospitals: HospitalsTemplate;
+  adios: AdiosTemplate;
+}*/ = chatInterfaceTemplate;
 
-//과정 진행과 동일
-// const {
-//   welcome,
-//   evaluating,
-//   high_eval,
-//   low_eval,
-//   recommend,
-//   hospitals,
-//   adios,
-// } = chatInterfaceTemplate;
-const INTERFACE_TEMPLATE: any = chatInterfaceTemplate;
 const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "hospitals", "adios"];
 
 export function ChatInterface() {
@@ -217,7 +213,7 @@ export function ChatInterface() {
 
   const handleLocationRequest = () => {
     setShowMap(true)
-    const locationMessage: Message = {
+    const locationMessage: any = {
       id: Date.now().toString(),
       content:
         [""],

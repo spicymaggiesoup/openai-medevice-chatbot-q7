@@ -42,7 +42,7 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
 
   const onCompletePost = (data: Address) => {
-    console.log(data);
+    console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
     useUserLocationNew.getState().setAddress(data.roadAddress);
     //setAddress(data.roadAddress);        // 도로명/지번 등 라이브러리가 가공한 최종 주소
     //setShowDetailAddressInput(true); // 상세주소 입력칸 표시
