@@ -248,6 +248,9 @@ export function ChatInterface() {
     // chat rooms 조회
     (async () => {
       try {
+
+        console.log('콘솔 Before Get Chatrooms :: token : ', token);
+        
         const getChatRooms = await fetch("/api/chat/rooms", {
           method: "GET",
           headers: {
@@ -255,11 +258,29 @@ export function ChatInterface() {
             "Authorization": `Bearer ${token}`,
           },
         });
+        
         const chatRooms = await getChatRooms.json();
 
+        //setRooms(chatRooms[0]['id'] + 1);
+        const _rooms = chatRooms[0]['id'] + 1;
+
+        console.log('콘솔 Before Create Chatrooms :: chatRooms : ', chatRooms);
+        console.log('콘솔 Before Create Chatrooms :: token : ', token);
+        console.log('콘솔 Before Create Chatrooms :: rooms : ', _rooms);
+        
+        const createChatRooms = await fetch("/api/chat/rooms", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title: _rooms }),
+        });
+
+        const newChatRoom = await createChatRooms.json();
+
         if (!cancelled) {
-          console.log("[chat-interface] chatroom status ::", chatRooms);
-          setRooms(chatRooms);          
+          console.log("[chat-interface] New chatroom status ::", newChatRoom);
         }
     
       } catch (err) {
