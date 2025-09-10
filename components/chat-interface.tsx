@@ -4,11 +4,11 @@ import type React from "react"
 import type { MouseEvent } from "react"
 import { useState, useEffect, useRef } from "react"
 
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 
 //import Hanspell  from "hanspell";
 
-import { useChatToken, useUserInfo, useMedicalDepartments } from "@/lib/store";
+import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,7 +50,7 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false)
   const [activeTyping, setActiveTyping] = useState(false)
   const [isClosed, setIsClosed] = useState(true)
-  const [activeTab, setActiveTab] = useState("증상 문의")
+  const [activeTab, setActiveTab] = useState("1")
   const [showMap, setShowMap] = useState(false)
   const [showAccountForm, setShowAccountForm] = useState(false)
 
@@ -58,7 +58,7 @@ export function ChatInterface() {
   const [gender, setGender] = useState(useUserInfo((s) => s.gender));
   const [nickName, setNickName] = useState(useUserInfo((s) => s.nickname));
 
-  const [rooms, setRooms] = useState<any>(null);
+  const [roomTitle, setRoomTitle] = useState<any>(null);
 
   const [messageStep, setMessageStep] = useState(0);
   const [evaluateScore, setEvaluateScore] = useState(95);  //모델지표의 평균값
@@ -71,10 +71,22 @@ export function ChatInterface() {
     ),
   ]);
 
+  const router = useRouter();
+
+  // 토큰
   const token = useChatToken((s) => s.chatToken);
 
+  // 창크기 확인
   const handleInnerSize = () => window.innerWidth <= 768;
 
+  // 사이드메뉴
+  const sideMenu = [
+    { page: "1", name: "증상 문의", icon: Activity, className: '' },
+    { page: "2", name: "과거 내역", icon: Clock, className: '' },
+  ];
+
+  // korean 스펠첵
+  // 모델에 보내기 전에 프론트에서 1차 유효검사
   const incorrectSpellCheck = (text: string) => {
     // Hanspell.check(text, (err: string, result: string[]) => {
     //   if (err) return console.error(err);
@@ -88,9 +100,11 @@ export function ChatInterface() {
     // });
   };
 
+  // messages on template 가져오기
   const getMessage = (_step: any) => 
     ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step]());
 
+  // chatbox 메시지 전송
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -149,6 +163,7 @@ export function ChatInterface() {
     }, 1500)
   }
 
+  // chatbox 버튼 클릭
   const handleButtonClick = (_message: string) => {
     const userMessage: any = {
       id: Date.now().toString(),
@@ -197,18 +212,49 @@ export function ChatInterface() {
     }, 1500);
   }
 
-  const handleLogout = () => {
-    window.location.href = "/"
+  // 로그아웃 버튼 클릭
+  const handleLogout = async() => {
+    const getAuthResponse = await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const { message } = await getAuthResponse.json();
+
+    console.log('[chart-interface] Logout Message :: ', message);
+
+    router.replace('/');
+    //window.location.href = "/"
   }
 
+  // 사이드메뉴 close on outside click 방지
   const handleSideMenuBackground = (e: MouseEvent<HTMLDivElement>) => {
     if (e?.currentTarget.className.indexOf('chat-container') > -1) {
       setIsClosed(true);
     }
   }
 
-  const handleSideMenu = () => {
+  // 사이드메뉴 열기/닫기 상태설정
+  const handleSideMenuToggle = () => {
     setIsClosed(!isClosed);
+  }
+
+  // 사이드메뉴 클릭
+  const clickSideMenu = async() => {
+    if (activeTab === "2") {
+      const roomId = "13"; //useChatRoom((s) => s.id);
+
+      // 테스트 get
+      // GET
+      const getChatMessages = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const responseMessages = await getChatMessages.json();
+
+      console.log('[chart-interface] Get Chatroom Messages :: ', responseMessages);
+    }
   }
 
   const handleLocationRequest = () => {
@@ -224,10 +270,7 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, locationMessage])
   }
 
-  const handleManageInfo = () => {
-
-  }
-
+  // 로그인 chatrooms 조회 & 생성
   useEffect(() => {
     // 메시지 스텝 +1 (welcome 다음)
     setMessageStep(messageStep + 1);
@@ -242,15 +285,12 @@ export function ChatInterface() {
     // 토큰 확인
     let cancelled = false;
     if (!token) {
-      redirect("/");
-    }
+      router.replace("/");
+    } 
 
     // chat rooms 조회
     (async () => {
-      try {
-
-        console.log('콘솔 Before Get Chatrooms :: token : ', token);
-        
+      try {        
         const getChatRooms = await fetch("/api/chat/rooms", {
           method: "GET",
           headers: {
@@ -265,6 +305,7 @@ export function ChatInterface() {
           console.log("[chat-interface] Chatroom List ::", chatRooms);
           
           const rooms = `Room_${Math.floor(Math.random() * 900 + 100)}`;
+          setRoomTitle(rooms);
           
           const createChatRooms = await fetch("/api/chat/rooms", {
             method: "POST",
@@ -281,20 +322,37 @@ export function ChatInterface() {
             throw new Error(text || `HTTP ${createChatRooms.status}`);
           }
           
-          const newChatRoom = await createChatRooms.json();
+          const {
+            title,
+            id,
+            final_disease_id,
+          } = await createChatRooms.json();
 
-          console.log("[chat-interface] New chatroom status ::", newChatRoom);
+          console.log("[chat-interface] New chatroom - ", `title: ${title}, id: ${id}, final_disease_id: ${final_disease_id}`);
+
+          // 채팅룸 정보저장
+          useChatRoom.getState().setTitle(`${title}`);
+          useChatRoom.getState().setId(id);
+          useChatRoom.getState().setFinalDiseaseId(final_disease_id);
+
+          // // welcome 메시지 전달
+          // const sendChatMessage = await fetch(`/api/chat/rooms/${id}/messages`, {
+          //   method: "POST",
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //     "Authorization": `Bearer ${token}`,
+          //   },
+          //   body: JSON.stringify({ content: messages }),
+          // });
         }
-          
     
       } catch (err) {
         console.error("로그인불가");
-        redirect("/");
+        router.replace('/');
       }
 
       // 임시 deptnm
       useMedicalDepartments.getState().setDepartment("내과");
-      
     })();
 
     return () => {
@@ -326,17 +384,15 @@ export function ChatInterface() {
           {/* Navigation */}
           <div className="flex-1 p-4">
             <nav className="space-y-2">
-              {[
-                //{ name: "Chat", icon: Home },
-                { name: "증상 문의", icon: Activity, className: '' },
-                { name: "과거 내역", icon: Clock, className: '' },
-              ].map((item) => (
+              {sideMenu.map((item) => (
                 <button
-                  key={item.name}
-                  onClick={() => setActiveTab(item.name)}
-                  //w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors bg-teal-50 text-teal-700 font-medium
+                  key={item.page}
+                  onClick={() => {
+                    setActiveTab(item.page);
+                    clickSideMenu();
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeTab === item.name ? "bg-green-50 text-teal-900 font-medium" : "text-gray-700 hover:bg-gray-50"
+                    activeTab === item.page ? "bg-green-50 text-teal-900 font-medium" : "text-gray-700 hover:bg-gray-50"
                   } ${item.className}`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -356,13 +412,12 @@ export function ChatInterface() {
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 flex items-center justify-center cursor-pointer"
-                onClick={() => handleSideMenu()}
+                onClick={() => handleSideMenuToggle()}
               >
                 <IconMenu />
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {/* <span className="flex items-center gap-2 mt-1 text-sm bg-teal-100 text-teal-700 px-3 py-1 rounded-full"> */}
               <Popover open={showAccountForm} onOpenChange={setShowAccountForm}>
                 <PopoverTrigger asChild>
                   <div
@@ -388,7 +443,6 @@ export function ChatInterface() {
                 </PopoverContent>
               </Popover>
               <span
-                 onClick={handleManageInfo}
                 className="flex items-center gap-2 mt-1 text-sm bg-green-100 text-gray-700 px-3 py-1 rounded-full"
               >
                 <div>{nickName}</div>
@@ -416,58 +470,80 @@ export function ChatInterface() {
           onClick={handleSideMenuBackground}
         >
           <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-md ${message.sender === "user" ? "" : "w-full max-w-2xl"}`}>
-                  {/* bot answer */}
-                  {
-                    message.sender === "bot" && (
-                      <div className="flex items-center gap-2 mb-2">
-                        {/* <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center"> */}
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                          {/* <div className="w-5 h-5 text-blue-600"> */}
-                          <div className="w-8 h-8 text-white-600">
-                            <MediBot />
+            {messages.map((message) => {
+              return (
+                <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-md ${message.sender === "user" ? "" : "w-full max-w-2xl"}`}>
+                    {/* bot answer */}
+                    {
+                      message.sender === "bot" && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                            <div className="w-8 h-8 text-white-600">
+                              <MediBot />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  }
+                      )
+                    }
+  
+                    <div
+                      className={`p-4 rounded-2xl ${
+                        message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
+                      }`}
+                    >
+                      {message.content.map(async(_message: string, order: any) => {
+                        const roomId = useChatRoom((s) => s.id);
 
-                  <div
-                    className={`p-4 rounded-2xl ${
-                      message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
-                    }`}
-                  >
-                    {message.content.map((_message: string, order: any) => (
-                      <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
-                    ))}
+                        if (roomId) {
+                          try {
+                            // 메시지 전송
+                            const sendChatMessage = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({ content: _message }),
+                            });
+  
+                            const chatRooms = await sendChatMessage.json();
+  
+                            console.log("[chat-interface] Send message :: ", chatRooms);
+                          } catch(e) {
+                            console.error(e);
+                          }
+                        }
 
-                    {message.type === "button-check" && message.buttons && (
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {message.buttons.map((_button: any) => (
-                          <Button
-                            key={_button}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleButtonClick(_button)}
-                            className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white"
-                          >
-                            {_button}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-
-                    {message.type === "map" && (
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        <MapLayout />
-                      </div>
-                    )}
+                        return (<p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>)
+                      })}
+  
+                      {message.type === "button-check" && message.buttons && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {message.buttons.map((_button: any) => (
+                            <Button
+                              key={_button}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleButtonClick(_button)}
+                              className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white"
+                            >
+                              {_button}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+  
+                      {message.type === "map" && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          <MapLayout />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             {/* {showMap && (
               <div className="w-full">

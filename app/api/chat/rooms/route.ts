@@ -1,9 +1,9 @@
-import { CHAT_GET, CHAT_POST } from "@/lib/proxy";
+import { CHATROOM_LIST, CHATROOM_NEW } from "@/lib/proxy";
 
 export async function GET(req: Request) {
-  return CHAT_GET(req);
+  return CHATROOM_LIST(req);
 }
 
 export async function POST(req: Request) {
-  return CHAT_POST(req);
+  return CHATROOM_NEW(req);
 }

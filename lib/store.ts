@@ -67,6 +67,26 @@ export const useUserLocationNew= create<{
   setAddress: (v) => set({ address: v }),
 }));
 
+export const useChatRoom = create<{
+  title?: string;
+  setTitle: (v: string) => void;
+
+  id?: number;
+  setId: (v: number) => void;
+
+  finalDiseaseId?: number;
+  setFinalDiseaseId: (v: number) => void;
+}>((set) => ({
+  title: undefined,
+  setTitle: (v) => set({ title: v }),
+  
+  id: undefined,
+  setId: (v) => set({ id: v }),
+
+  finalDiseaseId: undefined,
+  setFinalDiseaseId: (v) => set({ finalDiseaseId: v }),
+}));
+
 export const useMedicalDepartments= create<{
   department?: string;
   setDepartment: (v: string) => void;
