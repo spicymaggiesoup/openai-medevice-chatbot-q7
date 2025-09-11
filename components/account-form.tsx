@@ -94,7 +94,11 @@ export function AccountForm({ onClose }: AccountFormProps) {
                 value={formData.nickName}
                 onChange={handleInputChange}
                 readOnly
-                className="cursor-default mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
+                className="select-none cursor-default mt-1 border border-b-teal-300 rounded-none
+             focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0
+             focus:border-r-0 focus:shadow-none focus-visible:outline-none
+             focus-visible:ring-0"
+                // className="user-select:none cursor-default mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
             <div>

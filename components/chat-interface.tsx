@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react"
 
 import { redirect, useRouter } from "next/navigation";
 
-//import Hanspell  from "hanspell";
+// import Hanspell  from "hanspell";
 
 import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
 
@@ -59,10 +59,17 @@ export function ChatInterface() {
   const [nickName, setNickName] = useState(useUserInfo((s) => s.nickname));
 
   const [roomTitle, setRoomTitle] = useState<any>(null);
+  const [roomId, setRoomId] = useState(null);
+  const [finalDiseaseId, setfinalDiseaseIdRoomId] = useState(null);
 
   const [messageStep, setMessageStep] = useState(0);
+  const [userStep, setUserStep] = useState(0);
+  const [botStep, setBotStep] = useState(1);
+
   const [evaluateScore, setEvaluateScore] = useState(95);  //모델지표의 평균값
   const [incorrectMessageRate, setIncorrectMessageRate] = useState("");
+
+  const [userMessageContent, setUserMessageContent] = useState("");
   
   const [messages, setMessages] = useState<any[]>([
     Object.assign(
@@ -87,29 +94,111 @@ export function ChatInterface() {
 
   // korean 스펠첵
   // 모델에 보내기 전에 프론트에서 1차 유효검사
-  const incorrectSpellCheck = (text: string) => {
-    // Hanspell.check(text, (err: string, result: string[]) => {
-    //   if (err) return console.error(err);
+  // const incorrectSpellCheck = (text: string) => {
+  //   Hanspell.check(text, (err: string, result: string[]) => {
+  //     if (err) return console.error(err);
 
-    //   const totalWords = text.split(/\s+/).length;
-    //   const errorWords = result.length; // hanspell이 반환하는 교정 제안 개수
-    //   const errorRate = ((errorWords / totalWords) * 100).toFixed(2);
+  //     const totalWords = text.split(/\s+/).length;
+  //     const errorWords = result.length; // hanspell이 반환하는 교정 제안 개수
+  //     const errorRate = ((errorWords / totalWords) * 100).toFixed(2);
 
-    //   console.log(`오타율: ${errorRate}%`);
-    //   setIncorrectMessageRate(errorRate);
-    // });
-  };
+  //     console.log(`오타율: ${errorRate}%`);
+  //     setIncorrectMessageRate(errorRate);
+  //   });
+  // };
 
   // messages on template 가져오기
-  const getMessage = (_step: any) => 
-    ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step]());
+  const getMessage = (_step: any, symptom?: string) => 
+    ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step](symptom));
 
-  const sendMessage = async(_message: any) => {
-    const roomId = useChatRoom((s) => s.id);
-    if (roomId) {
+  const showBotMessage = async(_userMessage: any) => {
+
+    const botMessage: any = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      content: [],
+      sender: "bot",
+    };
+    //const returnMessage = {};
+
+    // 오타율이 너무 높으면 다시 써달라고 하기 (low-eval)
+    if (Number(incorrectMessageRate) >= 50) {
+      Object.assign(botMessage, {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        content: getMessage("low_eval"),
+        sender: "bot"
+      });
+    }
+
+    // 다음에 보일 메시지 체크
+    let _step = MESSAGE_SCENARIO[messageStep];
+
+    // 평가결과..
+    if (_step instanceof Array) {
+      _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
+    }
+
+    Object.assign(botMessage, getMessage(_step), {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+    });
+
+    setMessages((prev) => [...prev, botMessage])
+
+    const diagnoseSymptom = async () => {
+      if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
+        let content: any;
+        const [symptomName, score, messageContent]: any = await sendSymptomMessage(_userMessage);
+
+        console.log("[chat-interface] Result sysmptom :: ", messageContent);
+
+        if (!score) {
+          console.log('[chart-interface] score가 너무 낮아서, 질병판별 불가.');
+          content = [messageContent];
+        } else {
+          console.log('[chart-interface] 질병을 판별 함.');
+          content = messageContent.split('\n');
+        }
+
+        setMessages((prev) => [...prev, {
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          content, //[messageContent],
+          sender: "bot",
+        }]);
+
+        if (score) {
+          setTimeout(() => {
+            setMessages((prev) => [...prev, Object.assign({
+              id: Date.now().toString(),
+              timestamp: new Date(),
+              content: [],
+              sender: "bot",
+            }, getMessage('recommend', symptomName))]);
+          }, 1500);
+        } else {
+          // evaluate 다시
+          setMessageStep(1);
+        }
+      }
+
+      setIsTyping(false)
+      setActiveTyping(false)
+    };
+
+    setTimeout(diagnoseSymptom, 1500);
+   
+  };
+
+  const sendUserMessage = async(_message: any) => {
+    //const roomId = useChatRoom((s) => s.id);
+    const _roomId = roomId;
+
+    if (_roomId) {
       try {
         // 메시지 전송
-        const sendChatMessage = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+        const sendChatMessage = await fetch(`/api/chat/rooms/${_roomId}/messages`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -120,7 +209,67 @@ export function ChatInterface() {
 
         const chatRooms = await sendChatMessage.json();
 
-        console.log("[chat-interface] Send message :: ", chatRooms);
+        const { bot_message, user_message} = chatRooms;
+
+        console.log("[chat-interface] Send message :bot_message: ", bot_message);
+        console.log("[chat-interface] Send message :user_message: ", user_message);
+
+        // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
+
+        return user_message.content;
+
+      } catch(e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const sendSymptomMessage = async(_message: any) => {
+    //const roomId = useChatRoom((s) => s.id);
+    const _roomId = roomId;
+
+    if (_roomId) {
+
+      let resultDisease = "";
+
+      try {
+        // 메시지 전송
+        const sendSymptom = await fetch(`/api/ml/analyze-symptom`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            chat_room_id: roomId,
+            text: _message,
+          }),
+        });
+
+        const resultDiseases = await sendSymptom.json();
+
+        const {
+          original_text,
+          processed_text,
+          disease_classifications,
+          top_disease,
+          confidence,
+          formatted_message,
+        } = resultDiseases;
+
+        console.log("[chat-interface] Send symptoms: top_disease", top_disease);
+        console.log("[chat-interface] Send symptoms: confidence", confidence);
+        console.log("[chat-interface] Send symptoms: formatted_message", formatted_message);
+
+        // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
+
+        if (top_disease) {
+          if (confidence >= 0.8) {
+            return [top_disease, confidence, formatted_message];
+          }
+        }
+        return ['', 0, getMessage('score_low')['content'].join('')];
+
       } catch(e) {
         console.error(e);
       }
@@ -135,59 +284,43 @@ export function ChatInterface() {
     if (!inputMessage.trim()) return;
 
     console.log('[chart-interface] inputMessage :: ', inputMessage);
-    
-    const _inputMessage = await sendMessage(inputMessage);    
 
     const userMessage: any = {
       id: Date.now().toString(),
       timestamp: new Date(),
-      content: [_inputMessage],
+      content: [],
       sender: "user",
     };
 
-    console.log('[chart-interface] _inputMessage :: ', _inputMessage);
+    // 증상설명...
+    // const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "hospitals", "adios"];
+    if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
+      const _inputMessage = await sendUserMessage(inputMessage);
+
+      setUserMessageContent(_inputMessage);
+
+      Object.assign(userMessage, {
+        content: [_inputMessage]
+      });
+
+      console.log('[chart-interface] USER STEP1  :: ', _inputMessage);
+
+      //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
+      setUserStep(userStep + 1);
+      setMessageStep(messageStep + 1);
+      setMessages((prev) => [...prev, userMessage]);
+      setInputMessage("");
+      setIsTyping(true);
+      setActiveTyping(true);
+
+      // Simulate bot response
+      setTimeout(() => {
+        showBotMessage(_inputMessage);
+      }, 1500);
+    }
 
     // 오타율 검사(말이되는 말(한글)인지)
     //incorrectSpellCheck(inputMessage);    
-     
-    //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
-    setMessageStep(messageStep + 1);
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage("");
-    setIsTyping(true);
-    setActiveTyping(true);
-
-    // Simulate bot response
-    // setTimeout(() => {      
-    //   const returnMessage = {};
-
-    //   // 오타율이 너무 높으면 다시 써달라고 하기 (low-eval)
-    //   if (Number(incorrectMessageRate) >= 50) {
-    //     Object.assign(returnMessage, {
-    //       id: Date.now().toString(),
-    //       timestamp: new Date(),
-    //       content: getMessage("low_eval"),
-    //       sender: "bot"
-    //     });
-    //   }
-
-    //   // 다음에 보일 메시지 체크
-    //   let _step = MESSAGE_SCENARIO[messageStep];
-
-    //   // 평가결과..
-    //   if (_step instanceof Array) {
-    //     _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
-    //   }
-
-    //   Object.assign(returnMessage, getMessage(_step), {
-    //       id: Date.now().toString(),
-    //       timestamp: new Date(),
-    //   });
-
-    //   setMessages((prev) => [...prev, returnMessage])
-    //   setIsTyping(false)
-    //   setActiveTyping(false)
-    // }, 1500)
   }
 
   // chatbox 버튼 클릭
@@ -214,7 +347,7 @@ export function ChatInterface() {
         if (_message.includes('네')) {
           setMessageStep(messageStep + 1);
           setActiveTyping(false);
-          return getMessage("hospitals");
+          return getMessage("hospitals", );
         }
 
         if (_message.includes('아니요')) {
@@ -251,7 +384,6 @@ export function ChatInterface() {
     console.log('[chart-interface] Logout Message :: ', message);
 
     router.replace('/');
-    //window.location.href = "/"
   }
 
   // 사이드메뉴 close on outside click 방지
@@ -269,7 +401,7 @@ export function ChatInterface() {
   // 사이드메뉴 클릭
   const clickSideMenu = async() => {
     if (activeTab === "2") {
-      const roomId = "13"; //useChatRoom((s) => s.id);
+      //const roomId = "13"; //useChatRoom((s) => s.id);
 
       // 테스트 get
       // GET
@@ -361,6 +493,10 @@ export function ChatInterface() {
           useChatRoom.getState().setTitle(`${title}`);
           useChatRoom.getState().setId(id);
           useChatRoom.getState().setFinalDiseaseId(final_disease_id);
+
+          setRoomTitle(title);
+          setRoomId(id);
+          setfinalDiseaseIdRoomId(final_disease_id);
         }
     
       } catch (err) {
@@ -435,7 +571,10 @@ export function ChatInterface() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Popover open={showAccountForm} onOpenChange={setShowAccountForm}>
+              <Popover
+                open={showAccountForm}
+                onOpenChange={setShowAccountForm}
+              >
                 <PopoverTrigger asChild>
                   <div
                       onClick={() => {
@@ -451,6 +590,8 @@ export function ChatInterface() {
                   align="center"
                   side="top"
                   sideOffset={15}
+                  onOpenAutoFocus={(e) => e.preventDefault()}   // ← 자동 포커스 방지
+                   onCloseAutoFocus={(e) => e.preventDefault()}  // ← 선택 (옵션) 포커스 원복도 방지
                   >
                   <AccountForm
                     onClose={() => {
