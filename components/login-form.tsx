@@ -12,11 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MediLogo } from "@/components/medi-logo"
 
 export function LoginForm() {
-  const [email, setEmail] = useState("user@example.com");
-  const [password, setPassword] = useState("string");
+  const [email, setEmail] = useState("test1@test.com");
+  const [password, setPassword] = useState("test1234");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,15 +28,14 @@ export function LoginForm() {
       setError(`아이디나 비밀번호를 다시 확인해주세요.`);
     }
 
-    /*
     const getAuthResponse = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
-    });*/
+    });
   
     try {
-      /*const {
+      const {
         user,
         token_type,
         access_token,
@@ -59,8 +59,6 @@ export function LoginForm() {
       // Store login state (simple localStorage for demo)
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userId", user.id);
-
-      */
 
       // chat 이동
       router.push("/chat");
@@ -119,7 +117,7 @@ export function LoginForm() {
             className="cursor-pointer w-full bg-emerald-600 hover:bg-emerald/90 text-primary-foreground"
             disabled={isLoading}
           >
-            {isLoading ? "로그인 중..." : "로그인"}
+            {isLoading ? (<span>로그인 중<span className="dots">...</span></span>) : (<span>로그인</span>)}
           </Button>
         </form>
         <div className="mt-4 text-center">

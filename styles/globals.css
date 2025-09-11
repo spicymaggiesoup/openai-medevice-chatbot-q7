@@ -121,3 +121,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes dots {
+  0%, 20% { content: "."; }
+  40%     { content: ".."; }
+  60%     { content: "..."; }
+  80%,100%{ content: ""; }
+}
+
+.dots::after {
+  content: ".";
+  animation: dots 1.5s infinite steps(1, end);
+}

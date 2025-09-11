@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://15.165.110.223/";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://medic.yoon.today";
 
 // 로그인, token 얻음
 export async function LOGIN(req: Request) {

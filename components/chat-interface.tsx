@@ -104,10 +104,8 @@ export function ChatInterface() {
   const getMessage = (_step: any) => 
     ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step]());
 
-  // chatbox 메시지 전송
-  const handleSendMessage = async (e: React.FormEvent) => {
-
-    /*const roomId = useChatRoom((s) => s.id);
+  const sendMessage = async(_message: any) => {
+    const roomId = useChatRoom((s) => s.id);
     if (roomId) {
       try {
         // 메시지 전송
@@ -126,24 +124,31 @@ export function ChatInterface() {
       } catch(e) {
         console.error(e);
       }
-    }*/
+    }
+  };
 
+  // chatbox 메시지 전송
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // 입력여부 확인
     if (!inputMessage.trim()) return;
 
+    console.log('[chart-interface] inputMessage :: ', inputMessage);
+    
+    const _inputMessage = await sendMessage(inputMessage);    
+
     const userMessage: any = {
       id: Date.now().toString(),
       timestamp: new Date(),
-      content: [inputMessage],
+      content: [_inputMessage],
       sender: "user",
     };
 
-    console.log('[chart-interface] inputMessage :: ', inputMessage);
+    console.log('[chart-interface] _inputMessage :: ', _inputMessage);
 
     // 오타율 검사(말이되는 말(한글)인지)
-    //incorrectSpellCheck(inputMessage);
+    //incorrectSpellCheck(inputMessage);    
      
     //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
     setMessageStep(messageStep + 1);
@@ -153,36 +158,36 @@ export function ChatInterface() {
     setActiveTyping(true);
 
     // Simulate bot response
-    setTimeout(() => {      
-      const returnMessage = {};
+    // setTimeout(() => {      
+    //   const returnMessage = {};
 
-      // 오타율이 너무 높으면 다시 써달라고 하기 (low-eval)
-      if (Number(incorrectMessageRate) >= 50) {
-        Object.assign(returnMessage, {
-          id: Date.now().toString(),
-          timestamp: new Date(),
-          content: getMessage("low_eval"),
-          sender: "bot"
-        });
-      }
+    //   // 오타율이 너무 높으면 다시 써달라고 하기 (low-eval)
+    //   if (Number(incorrectMessageRate) >= 50) {
+    //     Object.assign(returnMessage, {
+    //       id: Date.now().toString(),
+    //       timestamp: new Date(),
+    //       content: getMessage("low_eval"),
+    //       sender: "bot"
+    //     });
+    //   }
 
-      // 다음에 보일 메시지 체크
-      let _step = MESSAGE_SCENARIO[messageStep];
+    //   // 다음에 보일 메시지 체크
+    //   let _step = MESSAGE_SCENARIO[messageStep];
 
-      // 평가결과..
-      if (_step instanceof Array) {
-        _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
-      }
+    //   // 평가결과..
+    //   if (_step instanceof Array) {
+    //     _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
+    //   }
 
-      Object.assign(returnMessage, getMessage(_step), {
-          id: Date.now().toString(),
-          timestamp: new Date(),
-      });
+    //   Object.assign(returnMessage, getMessage(_step), {
+    //       id: Date.now().toString(),
+    //       timestamp: new Date(),
+    //   });
 
-      setMessages((prev) => [...prev, returnMessage])
-      setIsTyping(false)
-      setActiveTyping(false)
-    }, 1500)
+    //   setMessages((prev) => [...prev, returnMessage])
+    //   setIsTyping(false)
+    //   setActiveTyping(false)
+    // }, 1500)
   }
 
   // chatbox 버튼 클릭
@@ -236,7 +241,7 @@ export function ChatInterface() {
 
   // 로그아웃 버튼 클릭
   const handleLogout = async() => {
-    /*const getAuthResponse = await fetch("/api/auth/logout", {
+    const getAuthResponse = await fetch("/api/auth/logout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -245,7 +250,6 @@ export function ChatInterface() {
 
     console.log('[chart-interface] Logout Message :: ', message);
 
-    */
     router.replace('/');
     //window.location.href = "/"
   }
@@ -313,8 +317,7 @@ export function ChatInterface() {
 
     // chat rooms 조회
     (async () => {
-      /*try {        
-        
+      try {        
         const getChatRooms = await fetch("/api/chat/rooms", {
           method: "GET",
           headers: {
@@ -363,7 +366,7 @@ export function ChatInterface() {
       } catch (err) {
         console.error("로그인불가");
         router.replace('/');
-      }*/
+      }
 
       // 임시 deptnm
       useMedicalDepartments.getState().setDepartment("내과");

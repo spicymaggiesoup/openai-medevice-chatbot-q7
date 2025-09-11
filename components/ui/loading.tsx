@@ -1,12 +1,12 @@
 import { useState, CSSProperties } from "react";
-import HashLoader from "react-spinners/ClipLoader";
+import HashLoader from "react-spinners/HashLoader";
 
 type Props = {
   isShow: boolean;
   override?: any;
 };
 
-function Loading({ isShow, override }: Props) {
+export function Loading({ isShow, override }: Props) {
   let [loading, setLoading] = useState(isShow);
 
   return (
