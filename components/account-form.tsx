@@ -99,7 +99,6 @@ export function AccountForm({ onClose }: AccountFormProps) {
             </div>
             <div>
             <Label htmlFor="age" className="flex items-center gap-2">
-              {/* <Calendar className="w-4 h-4" /> */}
               나이
             </Label>
             <Input
@@ -116,7 +115,6 @@ export function AccountForm({ onClose }: AccountFormProps) {
 
           <div>
             <Label htmlFor="address" className="flex items-center gap-2">
-              {/* <MapPin className="w-4 h-4" /> */}
               주소
             </Label>
             <div className="flex mt-1">
@@ -211,15 +209,6 @@ export function AccountForm({ onClose }: AccountFormProps) {
             </Button>
           </div>
         </form>
-
-        {/* 모달 
-        {isSearchAddressOpen && (
-          <Modal
-            isOpen={isSearchAddressOpen}
-            onClose={onSearchAddressClose}
-            onCompletePost={onCompletePost}
-          />
-        )}*/}
       </CardContent>
     </Card>
   )

@@ -106,6 +106,28 @@ export function ChatInterface() {
 
   // chatbox 메시지 전송
   const handleSendMessage = async (e: React.FormEvent) => {
+
+    /*const roomId = useChatRoom((s) => s.id);
+    if (roomId) {
+      try {
+        // 메시지 전송
+        const sendChatMessage = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ content: _message }),
+        });
+
+        const chatRooms = await sendChatMessage.json();
+
+        console.log("[chat-interface] Send message :: ", chatRooms);
+      } catch(e) {
+        console.error(e);
+      }
+    }*/
+
     e.preventDefault()
 
     // 입력여부 확인
@@ -214,7 +236,7 @@ export function ChatInterface() {
 
   // 로그아웃 버튼 클릭
   const handleLogout = async() => {
-    const getAuthResponse = await fetch("/api/auth/logout", {
+    /*const getAuthResponse = await fetch("/api/auth/logout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -223,6 +245,7 @@ export function ChatInterface() {
 
     console.log('[chart-interface] Logout Message :: ', message);
 
+    */
     router.replace('/');
     //window.location.href = "/"
   }
@@ -285,12 +308,13 @@ export function ChatInterface() {
     // 토큰 확인
     let cancelled = false;
     if (!token) {
-      router.replace("/");
+      //router.replace("/");
     } 
 
     // chat rooms 조회
     (async () => {
-      try {        
+      /*try {        
+        
         const getChatRooms = await fetch("/api/chat/rooms", {
           method: "GET",
           headers: {
@@ -334,22 +358,12 @@ export function ChatInterface() {
           useChatRoom.getState().setTitle(`${title}`);
           useChatRoom.getState().setId(id);
           useChatRoom.getState().setFinalDiseaseId(final_disease_id);
-
-          // // welcome 메시지 전달
-          // const sendChatMessage = await fetch(`/api/chat/rooms/${id}/messages`, {
-          //   method: "POST",
-          //   headers: {
-          //     "Content-Type": "application/json",
-          //     "Authorization": `Bearer ${token}`,
-          //   },
-          //   body: JSON.stringify({ content: messages }),
-          // });
         }
     
       } catch (err) {
         console.error("로그인불가");
         router.replace('/');
-      }
+      }*/
 
       // 임시 deptnm
       useMedicalDepartments.getState().setDepartment("내과");
@@ -492,31 +506,9 @@ export function ChatInterface() {
                         message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"
                       }`}
                     >
-                      {message.content.map(async(_message: string, order: any) => {
-                        const roomId = useChatRoom((s) => s.id);
-
-                        if (roomId) {
-                          try {
-                            // 메시지 전송
-                            const sendChatMessage = await fetch(`/api/chat/rooms/${roomId}/messages`, {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                                "Authorization": `Bearer ${token}`,
-                              },
-                              body: JSON.stringify({ content: _message }),
-                            });
-  
-                            const chatRooms = await sendChatMessage.json();
-  
-                            console.log("[chat-interface] Send message :: ", chatRooms);
-                          } catch(e) {
-                            console.error(e);
-                          }
-                        }
-
-                        return (<p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>)
-                      })}
+                      {message.content.map((_message: string, order: any) => (
+                        <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
+                      ))}
   
                       {message.type === "button-check" && message.buttons && (
                         <div className="flex flex-wrap gap-2 mt-4">

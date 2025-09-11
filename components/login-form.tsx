@@ -27,14 +27,15 @@ export function LoginForm() {
       setError(`아이디나 비밀번호를 다시 확인해주세요.`);
     }
 
+    /*
     const getAuthResponse = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
-    });
+    });*/
   
     try {
-      const {
+      /*const {
         user,
         token_type,
         access_token,
@@ -58,6 +59,8 @@ export function LoginForm() {
       // Store login state (simple localStorage for demo)
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userId", user.id);
+
+      */
 
       // chat 이동
       router.push("/chat");
