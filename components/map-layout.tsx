@@ -1,6 +1,7 @@
 import { Map, MapMarker } from "react-kakao-maps-sdk"
 
-export function MapLayout() {
+export function MapLayout(...props: any) {
+  console.log('[map-layout] props ... ', props);
   return (
     <Map
       center={{ lat: 37.497419, lng: 127.026605 }}

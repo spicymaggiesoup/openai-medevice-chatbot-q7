@@ -41,7 +41,7 @@ const INTERFACE_TEMPLATE: any /*{
   adios: AdiosTemplate;
 }*/ = chatInterfaceTemplate;
 
-const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "hospitals", "adios"];
+const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
 
 export function ChatInterface() {
   const typingRef = useRef(null);
@@ -70,6 +70,8 @@ export function ChatInterface() {
   const [incorrectMessageRate, setIncorrectMessageRate] = useState("");
 
   const [userMessageContent, setUserMessageContent] = useState("");
+
+  const [diseaseName, setDiseaseName] = useState("");
   
   const [messages, setMessages] = useState<any[]>([
     Object.assign(
@@ -108,8 +110,8 @@ export function ChatInterface() {
   // };
 
   // messages on template 가져오기
-  const getMessage = (_step: any, symptom?: string) => 
-    ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step](symptom));
+  const getMessage = (_step: any, symptom?: string, list?:string[]) => 
+    ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step](symptom, list));
 
   const showBotMessage = async(_userMessage: any) => {
 
@@ -149,7 +151,7 @@ export function ChatInterface() {
     const diagnoseSymptom = async () => {
       if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
         let content: any;
-        const [symptomName, score, messageContent]: any = await sendSymptomMessage(_userMessage);
+        const [diseaseName, score, messageContent]: any = await sendSymptomMessage(_userMessage);
 
         console.log("[chat-interface] Result sysmptom :: ", messageContent);
 
@@ -175,7 +177,7 @@ export function ChatInterface() {
               timestamp: new Date(),
               content: [],
               sender: "bot",
-            }, getMessage('recommend', symptomName))]);
+            }, getMessage('recommend', diseaseName))]);
           }, 1500);
         } else {
           // evaluate 다시
@@ -191,6 +193,65 @@ export function ChatInterface() {
    
   };
 
+  // 위치기반 병원추천
+  const recommendHospitals = async() => {
+    try {
+      // 메시지 전송
+      const recommendHospitalsByDisease = await fetch(`/api/medical/recommend-by-disease`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          "max_distance": 100,
+          "limit": 10,
+          "disease_name": diseaseName,
+          "chat_room_id": roomId,
+        }),
+      });
+
+      const recommendResult = await recommendHospitalsByDisease.json();
+
+      console.log("[chat-interface] recommendHospitals : ", recommendResult);
+
+      //return user_message.content;
+
+      return recommendResult.recommendations;
+
+    } catch(e) {
+      console.error(e);
+    }
+  };
+  // const recommendHospitals = async() => {
+  //   try {
+  //     // 메시지 전송
+  //     const recommendHospitalsByDisease = await fetch(`/api/medical/recommend-by-disease`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         "max_distance": 100,
+  //         "limit": 3,
+  //         "disease_name": diseaseName,
+  //         "chat_room_id": roomId,
+  //       }),
+  //     });
+
+  //     const recommendResult = await recommendHospitalsByDisease.json();
+
+  //     console.log("[chat-interface] recommendHospitals : ", recommendResult);
+
+  //     //return user_message.content;
+
+  //   } catch(e) {
+  //     console.error(e);
+  //   }
+  // };
+
+  // fetch message
   const sendUserMessage = async(_message: any) => {
     //const roomId = useChatRoom((s) => s.id);
     const _roomId = roomId;
@@ -214,8 +275,7 @@ export function ChatInterface() {
         console.log("[chat-interface] Send message :bot_message: ", bot_message);
         console.log("[chat-interface] Send message :user_message: ", user_message);
 
-        // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
-
+        // {id: 3, message_type: 'USER', content: '허리가 아파요.', created_at: '2025-09-11T14:24:19.250527'}
         return user_message.content;
 
       } catch(e) {
@@ -225,7 +285,6 @@ export function ChatInterface() {
   };
 
   const sendSymptomMessage = async(_message: any) => {
-    //const roomId = useChatRoom((s) => s.id);
     const _roomId = roomId;
 
     if (_roomId) {
@@ -233,7 +292,7 @@ export function ChatInterface() {
       let resultDisease = "";
 
       try {
-        // 메시지 전송
+        // 증상 분석
         const sendSymptom = await fetch(`/api/ml/analyze-symptom`, {
           method: "POST",
           headers: {
@@ -247,15 +306,17 @@ export function ChatInterface() {
         });
 
         const resultDiseases = await sendSymptom.json();
-
+        
+        // 질병예측 결과
         const {
-          original_text,
+          chat_room_id,
           processed_text,
           disease_classifications,
           top_disease,
           confidence,
           formatted_message,
         } = resultDiseases;
+
 
         console.log("[chat-interface] Send symptoms: top_disease", top_disease);
         console.log("[chat-interface] Send symptoms: confidence", confidence);
@@ -265,6 +326,8 @@ export function ChatInterface() {
 
         if (top_disease) {
           if (confidence >= 0.8) {
+            setDiseaseName(top_disease);
+
             return [top_disease, confidence, formatted_message];
           }
         }
@@ -323,53 +386,82 @@ export function ChatInterface() {
     //incorrectSpellCheck(inputMessage);    
   }
 
-  // chatbox 버튼 클릭
-  const handleButtonClick = (_message: string) => {
-    const userMessage: any = {
+  // chatbox 메시지 전송 - chatbox 버튼 클릭
+  const handleButtonClick = async(_message: string) => {
+    // 사용자 답변 (클릭한 버튼 내용)
+    setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       content: [_message],
       sender: "user",
       timestamp: new Date(),
+    }]);
+    setInputMessage("")
+    setIsTyping(true)
+    setActiveTyping(true)
+
+    // 병원추천 여부 확인 및 반환
+    //const getRecommendMessage = async() => {};
+
+    const botMessage: any = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      content: [],
+      sender: "bot",
+    };
+
+    //
+    if (_message.includes('네')) {
+      const recommendedHospitals = await recommendHospitals();
+
+      console.log('[chat-interface] 네 버튼으로 추천받은 병원리스트: ', recommendedHospitals);
+
+      //setMessageStep(messageStep + 1);
+      setActiveTyping(false);
+
+      Object.assign(botMessage, {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        content: getMessage("hospitals", diseaseName, recommendedHospitals),
+        sender: "bot"
+      });
+    
+    // 종료
+    } else if (_message.includes('아니요')) {
+      setActiveTyping(false);
+      
+      Object.assign(botMessage, {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        content: getMessage("adios"),
+        sender: "bot"
+      });
+
+    // 다른걸 입력했다 ?
+    } else {
+      Object.assign(botMessage, {
+        content: ['버튼을 선택해주세요! 🙌']
+      });
     }
 
-    setMessages((prev) => [...prev, userMessage])
-      setInputMessage("")
-      setIsTyping(true)
-      setActiveTyping(true)
+    // Simulate bot response
+    //setTimeout(() => {
+    setMessages((prev) => [...prev, botMessage]);
+    setInputMessage("");
+    setIsTyping(true);
+    setActiveTyping(true);
+    //}, 1500);
 
-      const getReplyMessage = () => {
-        if (_message.includes('예측')) {
-          return Object.assign(userMessage, {
-            content: ['']
-          });
-        }
+    // Simulate bot response
+    // setTimeout(async() => {
+    //   const _recommendationMessage = await getRecommendMessage();
+    //   const botMessage: any = Object.assign(_recommendationMessage, {
+    //     id: Date.now().toString(),
+    //     timestamp: new Date(),
+    //   });
 
-        if (_message.includes('네')) {
-          setMessageStep(messageStep + 1);
-          setActiveTyping(false);
-          return getMessage("hospitals", );
-        }
-
-        if (_message.includes('아니요')) {
-          setActiveTyping(false);
-          return getMessage("adios");
-        }
-
-        return Object.assign(userMessage, {
-          content: ['버튼을 선택해주세요! 🙌']
-        });
-      };
-
-      // Simulate bot response
-      setTimeout(() => {
-        const botMessage: any = Object.assign(getReplyMessage(), {
-          id: Date.now().toString(),
-          timestamp: new Date(),
-        });
-
-        setMessages((prev) => [...prev, botMessage])
-        setIsTyping(false)
-    }, 1500);
+    //   setMessages((prev) => [...prev, botMessage])
+    //   setIsTyping(false)
+    // }, 1500);
   }
 
   // 로그아웃 버튼 클릭
@@ -590,8 +682,8 @@ export function ChatInterface() {
                   align="center"
                   side="top"
                   sideOffset={15}
-                  onOpenAutoFocus={(e) => e.preventDefault()}   // ← 자동 포커스 방지
-                   onCloseAutoFocus={(e) => e.preventDefault()}  // ← 선택 (옵션) 포커스 원복도 방지
+                  onOpenAutoFocus={(e) => e.preventDefault()}   // 자동 포커스 방지
+                   onCloseAutoFocus={(e) => e.preventDefault()}  // 선택 (옵션) 포커스 원복도 방지
                   >
                   <AccountForm
                     onClose={() => {
@@ -654,8 +746,9 @@ export function ChatInterface() {
                         <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
                       ))}
   
-                      {message.type === "button-check" && message.buttons && (
-                        <div className="flex flex-wrap gap-2 mt-4">
+                      {message.type === "button-check"
+                        && message.buttons
+                        && (<div className="flex flex-wrap gap-2 mt-4">
                           {message.buttons.map((_button: any) => (
                             <Button
                               key={_button}
@@ -672,7 +765,7 @@ export function ChatInterface() {
   
                       {message.type === "map" && (
                         <div className="flex flex-wrap gap-2 mt-4">
-                          <MapLayout />
+                          <MapLayout locations={message.location}/>
                         </div>
                       )}
                     </div>
@@ -680,35 +773,6 @@ export function ChatInterface() {
                 </div>
               );
             })}
-            
-            {/* {showMap && (
-              <div className="w-full">
-                <MapContainer
-                  userLocation={{ lat: 40.7128, lng: -74.006 }}
-                  onLocationSelect={(facility) => {
-                    const facilityMessage: Message = {
-                      id: Date.now().toString(),
-                      content: `You selected ${facility.name}. Would you like me to help you prepare for your visit or provide more information about this facility?`,
-                      sender: "bot",
-                      timestamp: new Date(),
-                      type: "text",
-                    }
-                    setMessages((prev) => [...prev, facilityMessage])
-                  }}
-                />
-              </div>
-            )} */}
-
-            {/* <div className="flex items-start gap-3 bg-white p-4 rounded-2xl shadow-sm">
-              <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-gray-800 font-medium">
-                  Try consulting a physician or a pulmonologist for further investigation.
-                </p>
-              </div>
-            </div> */}
 
             {/* BRG */}
             {isTyping && (

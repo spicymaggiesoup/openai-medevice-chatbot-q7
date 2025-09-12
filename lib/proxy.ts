@@ -106,38 +106,40 @@ export async function ME(req: Request) {
     }
 }
 
-export async function LOCATION(req: Request) {
-  try {
-    // 1) 루프 방지: 잘못된 설정이면 바로 차단
-    const origin = req.headers.get("origin") || "";
-    if (!API_BASE) {
-      return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+// 사용자위치 전달
+export async function MODIFY_LOCATION(req: Request) {
+    try {
+      const origin = req.headers.get("origin") || "";
+      if (!API_BASE) {
+        return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+      }
+      if (origin && API_BASE.startsWith(origin)) {
+        return NextResponse.json({ ok: false, error: "API_BASE misconfigured (points to this app)" }, { status: 500 });
+      }
+  
+      const body = await req.json();
+      const auth = req.headers.get("authorization") || "";
+  
+      const r = await fetch(`${API_BASE}/api/users/location`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(auth ? { authorization: auth } : {}),
+          "accept": "application/json",
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
+      });
+  
+      return new NextResponse(await r.text(), {
+        status: r.status,
+        headers: { "content-type": r.headers.get("content-type") ?? "application/json" },
+      });
+  
+    } catch (err) {
+      console.error("Proxy PUT /api/users/location error:", err);
+      return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
     }
-
-    if (origin && API_BASE.startsWith(origin)) {
-      // 같은 오리진을 찍고 있으면 자기 자신 호출 루프 가능성 ↑
-      return NextResponse.json({ ok: false, error: "API_BASE misconfigured (points to this app)" }, { status: 500 });
-    }
-
-    // 2) 필요한 헤더만 전달 (대부분 Authorization만)
-    const body = await req.json();
-    const r = await fetch(`${API_BASE}/api/users/location`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const j = await r.json();
-    const res = NextResponse.json(j, { status: r.status });
-
-    return res;
-
-  } catch (err) {
-    console.error("Proxy GET /api/users/location error:", err);
-    return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
-  }
 }
 
 // 챗룸 목록 조회
@@ -257,6 +259,7 @@ export async function MESSAGES(req: Request, roomId: number) {
   }
 }
 
+// 메시지 전달
 export async function SEND_MESSAGE(req: Request, roomId: number) {
   if (!roomId) {
     return NextResponse.json({ ok: false, error: "roomId missing" }, { status: 400 });
@@ -301,6 +304,7 @@ export async function SEND_MESSAGE(req: Request, roomId: number) {
   }
 }
 
+// 증상검색
 export async function ANALYZE_SYMPTOM(req: Request) {
   try {
     const origin = req.headers.get("origin") || "";
@@ -341,6 +345,7 @@ export async function ANALYZE_SYMPTOM(req: Request) {
   }
 }
 
+// 증상+병원검색
 export async function FULL_ANALYSIS(req: Request) {
   try {
     const origin = req.headers.get("origin") || "";
@@ -377,6 +382,88 @@ export async function FULL_ANALYSIS(req: Request) {
     });
   } catch (err) {
     console.error(`Proxy POST /api/ml/full-analysis error:`, err);
+    return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
+  }
+}
+
+// 병원추천 질환ID
+export async function RECOMMEND_HOSPITALS_BY_ID(req: Request) {
+  try {
+    const origin = req.headers.get("origin") || "";
+    if (!API_BASE) {
+      return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+    }
+    if (origin && API_BASE.startsWith(origin)) {
+      return NextResponse.json(
+        { ok: false, error: "API_BASE misconfigured (points to this app)" },
+        { status: 500 }
+      );
+    }
+
+    const auth = req.headers.get("authorization");
+    const contentType = req.headers.get("content-type") || "application/json";
+    const body = await req.text();
+
+    const upstreamUrl = new URL(`/api/medical/recommend-hospitals`, API_BASE).toString();
+
+    const r = await fetch(upstreamUrl, {
+      method: "POST",
+      headers: {
+        ...(auth ? { authorization: auth } : {}),
+        "content-type": contentType,
+        accept: "application/json",
+      },
+      body,
+      cache: "no-store",
+    });
+
+    return new NextResponse(r.body, {
+      status: r.status,
+      headers: { "content-type": r.headers.get("content-type") ?? "application/json" },
+    });
+  } catch (err) {
+    console.error(`Proxy POST /api/medical/recommend-hospitals error:`, err);
+    return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
+  }
+}
+
+// 병원추천 질환명 + 사용자위치 기반
+export async function RECOMMEND_HOSPITALS_BY_DISEASE(req: Request) {
+  try {
+    const origin = req.headers.get("origin") || "";
+    if (!API_BASE) {
+      return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+    }
+    if (origin && API_BASE.startsWith(origin)) {
+      return NextResponse.json(
+        { ok: false, error: "API_BASE misconfigured (points to this app)" },
+        { status: 500 }
+      );
+    }
+
+    const auth = req.headers.get("authorization");
+    const contentType = req.headers.get("content-type") || "application/json";
+    const body = await req.text();
+
+    const upstreamUrl = new URL(`/api/medical/recommend-by-disease`, API_BASE).toString();
+
+    const r = await fetch(upstreamUrl, {
+      method: "POST",
+      headers: {
+        ...(auth ? { authorization: auth } : {}),
+        "content-type": contentType,
+        accept: "application/json",
+      },
+      body,
+      cache: "no-store",
+    });
+
+    return new NextResponse(r.body, {
+      status: r.status,
+      headers: { "content-type": r.headers.get("content-type") ?? "application/json" },
+    });
+  } catch (err) {
+    console.error(`Proxy POST /api/medical/recommend-by-disease error:`, err);
     return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
   }
 }

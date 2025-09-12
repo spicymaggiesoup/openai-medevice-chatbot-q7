@@ -9,7 +9,7 @@ import { type Address } from "react-daum-postcode";
 
 import { User, Mail, Phone, Calendar, MapPin, Search } from "lucide-react"
 
-import { useUserInfo, useUserLocationNew } from "@/lib/store";
+import { useChatToken, useUserInfo, useUserLocationNew } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,15 +25,16 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ onClose }: AccountFormProps) {
-  const handleUserAddress = () => useUserLocationNew((s) => s.address);
-  const [formData, setFormData] = useState({
-    nickName: useUserInfo((s) => s.nickname),
-    email: useUserInfo((s) => s.email),
-    gender: useUserInfo((s) => s.gender),
-    age: useUserInfo((s) => s.age),
-    address: handleUserAddress(),
-    password: useUserInfo((s) => s.password),
-  });
+  //const handleUserAddress = () => useUserLocationNew((s) => s.address);
+  
+  const nickname = useUserInfo((s) => s.nickname)
+  const email = useUserInfo((s) => s.email)
+  const gender = useUserInfo((s) => s.gender)
+  const age = useUserInfo((s) => s.age)
+  const password = useUserInfo((s) => s.password)
+
+  const address = useUserLocationNew((s) => s.address)
+  const setAddress = useUserLocationNew((s) => s.setAddress)
 
   const {
     isOpen: isSearchAddressOpen,
@@ -41,39 +42,72 @@ export function AccountForm({ onClose }: AccountFormProps) {
     onClose: onSearchAddressClose,
   } = useDisclosure();
 
+  const [formData, setFormData] = useState({
+    nickName: nickname ?? '',
+    email: email ?? '',
+    gender: gender ?? '',
+    age: age ?? '',
+    address: address ?? '',
+    password: password ?? '',
+  });
+
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
+
+  // 토큰
+  const token = useChatToken((s) => s.chatToken);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   };
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const newAddress = handleUserAddress();
-    console.log('콘솔 formData.address::', newAddress);
+    const newAddress = formData.address
 
-    const getUsersLocation = await fetch("/api/users/location", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
+    // 주소변경
+    const r = await fetch('/api/users/location', {
+      method: 'PUT',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
       body: JSON.stringify({ road_address: newAddress }),
-    });
-
-    const userLocation = await getUsersLocation.json();
-
-    console.log('[account-form] User Location :: ', userLocation);
+    })
+    const userLocation = await r.json()
+    console.log('[account-form] User Location :: ', userLocation)
 
     onClose()
   };
 
+  // 주소를 스토어에 반영
   const handleAddressForm = () => {
-    useUserLocationNew.getState().setAddress((useUserInfo((s) => s.address)) || '');
+    setAddress(formData.address || '')
   };
 
+  // const handleSubmit = async(e: React.FormEvent) => {
+  //   e.preventDefault()
+
+  //   const newAddress = handleUserAddress();
+  //   console.log('콘솔 formData.address::', newAddress);
+
+  //   const getUsersLocation = await fetch("/api/users/location", {
+  //     method: "PUT",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({ road_address: newAddress }),
+  //   });
+
+  //   const userLocation = await getUsersLocation.json();
+
+  //   console.log('[account-form] User Location :: ', userLocation);
+
+  //   onClose()
+  // };
+
   useEffect(() => {
-    
-  }, []);
+    setFormData((prev) => ({ ...prev, address: address ?? '' }))
+  }, [address])
 
   return (
     <Card className="w-full max-w-md">

@@ -1,5 +1,5 @@
-import { LOCATION } from "@/lib/proxy";
+import { MODIFY_LOCATION } from "@/lib/proxy";
 
 export async function PUT(req: Request) {
-  return LOCATION(req);
+  return MODIFY_LOCATION(req);
 }
