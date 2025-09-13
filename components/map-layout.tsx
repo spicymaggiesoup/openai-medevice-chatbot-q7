@@ -4,7 +4,7 @@ import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@
 
 export function MapLayout(...props: any) {
   console.log('[map-layout] props ... ', props);
-  
+
   const { latitude, longitude, hospitalName, hospitalAddress, hospitalPhone } = props[0];
 
   // user 위치
@@ -21,7 +21,7 @@ export function MapLayout(...props: any) {
 
   return (
     <Map
-      center={{ lat: userLat, lng: userLng }}
+      center={{ lat, lng }}
       style={{ width: "100%", height: "360px" }}
     >
       <MapMarker
