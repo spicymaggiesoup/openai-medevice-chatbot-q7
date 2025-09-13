@@ -45,6 +45,7 @@ const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"],
 
 export function ChatInterface() {
   const typingRef = useRef(null);
+  const chatRef = useRef<HTMLDivElement | null>(null);   // ★ 추가
 
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
@@ -93,21 +94,6 @@ export function ChatInterface() {
     { page: "1", name: "증상 문의", icon: Activity, className: '' },
     { page: "2", name: "과거 내역", icon: Clock, className: '' },
   ];
-
-  // korean 스펠첵
-  // 모델에 보내기 전에 프론트에서 1차 유효검사
-  // const incorrectSpellCheck = (text: string) => {
-  //   Hanspell.check(text, (err: string, result: string[]) => {
-  //     if (err) return console.error(err);
-
-  //     const totalWords = text.split(/\s+/).length;
-  //     const errorWords = result.length; // hanspell이 반환하는 교정 제안 개수
-  //     const errorRate = ((errorWords / totalWords) * 100).toFixed(2);
-
-  //     console.log(`오타율: ${errorRate}%`);
-  //     setIncorrectMessageRate(errorRate);
-  //   });
-  // };
 
   // messages on template 가져오기
   const getMessage = (_step: any, symptom?: string, list?:string[]) => 
@@ -239,33 +225,6 @@ export function ChatInterface() {
       console.error(e);
     }
   };
-  // const recommendHospitals = async() => {
-  //   try {
-  //     // 메시지 전송
-  //     const recommendHospitalsByDisease = await fetch(`/api/medical/recommend-by-disease`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "Authorization": `Bearer ${token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         "max_distance": 100,
-  //         "limit": 3,
-  //         "disease_name": diseaseName,
-  //         "chat_room_id": roomId,
-  //       }),
-  //     });
-
-  //     const recommendResult = await recommendHospitalsByDisease.json();
-
-  //     console.log("[chat-interface] recommendHospitals : ", recommendResult);
-
-  //     //return user_message.content;
-
-  //   } catch(e) {
-  //     console.error(e);
-  //   }
-  // };
 
   // fetch message
   const sendUserMessage = async(_message: any) => {
@@ -341,8 +300,7 @@ export function ChatInterface() {
         // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
 
         if (top_disease) {
-          if (confidence >= 0.1) {
-          // if (confidence >= 0.8) {
+          if (confidence >= 0.8) {
             setDiseaseName(top_disease);
 
             return [top_disease, confidence, formatted_message];
@@ -390,8 +348,8 @@ export function ChatInterface() {
       setMessageStep(messageStep + 1);
       setMessages((prev) => [...prev, userMessage]);
       setInputMessage("");
-      setIsTyping(true);
-      setActiveTyping(true);
+      setIsTyping(false);
+      setActiveTyping(false);
 
       // Simulate bot response
       setTimeout(() => {
@@ -400,7 +358,7 @@ export function ChatInterface() {
     }
 
     // 오타율 검사(말이되는 말(한글)인지)
-    //incorrectSpellCheck(inputMessage);    
+    //incorrectSpellCheck(inputMessage);
   }
 
   // chatbox 메시지 전송 - chatbox 버튼 클릭
@@ -434,7 +392,9 @@ export function ChatInterface() {
 
       //setMessageStep(messageStep + 1);
       setActiveTyping(false);
-
+      setInputMessage("");
+      setIsTyping(false);
+      
       Object.assign(botMessage, getMessage("hospitals", diseaseName, recommendedHospitals));
     
     // 종료
@@ -446,6 +406,9 @@ export function ChatInterface() {
         timestamp: new Date(),
       }, getMessage("adios")));
 
+      setIsTyping(false);
+      setActiveTyping(false);
+
     // 다른걸 입력했다 ?
     } else {
       Object.assign(botMessage, {
@@ -456,9 +419,6 @@ export function ChatInterface() {
     // Simulate bot response
     //setTimeout(() => {
     setMessages((prev) => [...prev, botMessage]);
-    setInputMessage("");
-    setIsTyping(true);
-    setActiveTyping(true);
     //}, 1500);
 
     // Simulate bot response
@@ -474,14 +434,14 @@ export function ChatInterface() {
     // }, 1500);
   }
 
-    // chatbox Map 메시지 전송
+  // chatbox Map 메시지 전송
   const handleMapMessage = async (e: any) => {
     e.preventDefault()
 
     const hospitalInfo = e.currentTarget.name;
-    const [hospitalName, hospitalAddress] = hospitalInfo.split('^');
+    const [hospitalName, hospitalAddress, hospitalPhone] = hospitalInfo.split('^');
 
-    console.log('hospitalName : ', hospitalName, ', hospitalAddress : ', hospitalAddress);
+    console.log('hospitalName : ', hospitalName, ', hospitalAddress : ', hospitalAddress, ', hospitalPhone: ', hospitalPhone);
 
     const getHospitalId = await fetch(`/api/medical/hospitals?search=${encodeURIComponent(hospitalName)}&department_id=${null}&disease_id=${null}`, {
       method: "GET",
@@ -512,17 +472,19 @@ export function ChatInterface() {
     setMessageStep(messageStep + 1);
     setMessages((prev) => [...prev, {
       id: Date.now().toString(),
-      content: [`${hospitalName}`, `${hospitalAddress}`],
+      content: [`🏣 ${hospitalName} (${hospitalPhone})`, ` ${hospitalAddress}`],
       sender: "bot",
       type: "map",
       timestamp: new Date(),
       hospitalName,
+      hospitalAddress,
+      hospitalPhone,
       latitude: hospitalLocationResult.latitude,
       longitude: hospitalLocationResult.longitude,
     }]);
     setInputMessage("");
-    setIsTyping(true);
-    setActiveTyping(true);
+    setIsTyping(false);
+    setActiveTyping(false);
   }
 
   // 로그아웃 버튼 클릭
@@ -683,7 +645,7 @@ export function ChatInterface() {
                   <MediLogo />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">MeDevise</h1>
+              <h1 className="text-2xl font-bold text-gray-900">MeDeviSe</h1>
             </div>
           </div>
 
@@ -759,8 +721,8 @@ export function ChatInterface() {
                 <div>{nickName}</div>
                 <div>{age}세 </div>
                 <div className="flex items-center gap-2">
-                  <div>{gender} </div>
-                  <div className={`w-2 h-2 rounded-full bg-${gender === "여성" ? "red" : "blue"}-500`}></div>
+                  <div>{gender === "Male" ? "남성" : "여성"} </div>
+                  <div className={`w-2 h-2 rounded-full bg-${gender === "Male" ? "blue" : "red"}-500`} ></div>
                 </div>
               </span>
               <Button
@@ -777,6 +739,7 @@ export function ChatInterface() {
         </div>
 
         <div
+          ref={chatRef}
           className="chat-container flex-1 overflow-y-auto p-6 bg-emerald-50"
           onClick={handleSideMenuBackground}
         >
@@ -838,59 +801,62 @@ export function ChatInterface() {
                               >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-medium text-gray-900">{_locationItem.name}</h4>
-                                  <span
-                                  className={`px-2 py-1 text-xs rounded-full ${
-                                    'bg-red-100 text-red-700'
-                                    /*message.type === 'Hospital'
-                                    ? 'bg-red-100 text-red-700'
-                                    : message.type === 'Emergency'
-                                    ? 'bg-orange-100 text-orange-700'
-                                    : 'bg-blue-100 text-blue-700'
-                                    */
-                                  }`}
+                                  <div className="flex items-center gap-2">
+                                    <div className={`font-medium text-gray-900${_locationItem.name.length >= 11 ? ' w-[180px] whitespace-nowrap text-ellipsis overflow-hidden' : ''}`}>{_locationItem.name}</div>
+                                    {/* <div className="w-[190px] overflow-hidden text-nowrap text-ellipsis font-medium text-gray-900">{_locationItem.name}</div> */}
+                                    <span
+                                      className={`px-2 py-1 text-xs rounded-full ${'bg-red-100 text-red-700'
+                                        /*message.type === 'Hospital'
+                                        ? 'bg-red-100 text-red-700'
+                                        : message.type === 'Emergency'
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : 'bg-blue-100 text-blue-700'
+                                        */
+                                      }`}
+                                    >
+                                      {_locationItem.hospital_type_name}
+                                    </span>
+                                  </div>
+
+                                  {_locationItem.recommended_reason && (
+                                    <p className="text-xs text-gray-500 mt-1">{_locationItem.recommended_reason}</p>
+                                  )}
+
+                                  <p className="text-sm text-gray-600 mt-1">{_locationItem.address}</p>
+
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                    {_locationItem.distance && (
+                                    <div className="flex items-center gap-1">
+                                      <Navigation className="w-3 h-3" />
+                                      {(_locationItem.distance).toFixed(2)} km
+                                    </div>
+                                    )}
+                                    {_locationItem.phone && (
+                                    <div className="flex items-center gap-1">
+                                      <Phone className="w-3 h-3" />
+                                      {_locationItem.phone}
+                                    </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    name={`${_locationItem.name}^${_locationItem.address}^${_locationItem.phone}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleMapMessage(e);
+                                      //getDirections(facility)
+                                    }}
+                                    className="ml-2 cursor-pointer flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
                                   >
-                                  {_locationItem.hospital_type_name}
-                                  </span>
+                                    <Navigation className="w-3 h-3 mr-1" />
+                                    Directions
+                                  </Button>
+
                                 </div>
-
-                                {_locationItem.recommended_reason && (
-                                  <p className="text-xs text-gray-500 mt-1">{_locationItem.recommended_reason}</p>
-                                )}
-
-                                <p className="text-sm text-gray-600 mt-1">{_locationItem.address}</p>
-
-                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                  {_locationItem.distance && (
-                                  <div className="flex items-center gap-1">
-                                    <Navigation className="w-3 h-3" />
-                                    {_locationItem.distance}
-                                  </div>
-                                  )}
-                                  {_locationItem.phone && (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="w-3 h-3" />
-                                    {_locationItem.phone}
-                                  </div>
-                                  )}
-                                </div>
-                                </div>
-
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  name={`${_locationItem.name}^${_locationItem.address}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMapMessage(e);
-                                    //getDirections(facility)
-                                  }}
-                                  className="ml-2 cursor-pointer flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
-                                >
-                                  <Navigation className="w-3 h-3 mr-1" />
-                                  Directions
-                                </Button>
                               </div>
                               </div>
                             ))}
@@ -899,8 +865,7 @@ export function ChatInterface() {
 
                       {message.type === "map" && (
                         <div className="flex flex-wrap gap-2 mt-4">
-                          <MapLayout latitude={message.latitude} longitude={message.longitude} />
-                          {/* <MapLayout name="" address="" latitude={message.latitude} longitude={message.longitude} /> */}
+                          <MapLayout hospitalName={message.hospitalName} latitude={message.latitude} longitude={message.longitude} />
                         </div>
                       )}
                     </div>
@@ -944,7 +909,7 @@ export function ChatInterface() {
                 ref={typingRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="MeDevise에게 문의하세요."
+                placeholder="MeDeviSe에게 문의하세요."
                 className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
                 disabled={activeTyping}
               />

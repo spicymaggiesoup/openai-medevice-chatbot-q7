@@ -4,13 +4,15 @@ import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@
 
 export function MapLayout(...props: any) {
   console.log('[map-layout] props ... ', props);
-
-  // const { name, address } = props[0];
-  const { latitude, longitude, hospitalName } = props[0];
+  
+  const { latitude, longitude, hospitalName, hospitalAddress, hospitalPhone } = props[0];
 
   // user 위치
   const userLat = useUserInfo((s) => s.latitude) || 0;
   const userLng = useUserInfo((s) => s.longitude) || 0;
+
+  //
+  const [isOpen, setIsOpen] = useState(false)
 
   const [mapPins, setMapPins] = useState([]);
 
@@ -25,8 +27,15 @@ export function MapLayout(...props: any) {
       <MapMarker
         position={{ lat, lng }}
         title={hospitalName}
+        onClick={() => setIsOpen(true)}   // 클릭 이벤트
       >
-        <div style={{ color: "#000" }}>1</div>
+        {isOpen && (
+          <div style={{ padding: "8px", color: "#000", background: "#fff" }}>
+            <b>{hospitalName}</b>
+            <p>{hospitalAddress}</p>
+            <p>{hospitalPhone}</p>
+          </div>
+        )}
       </MapMarker>
     </Map>
   )
