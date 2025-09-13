@@ -30,6 +30,12 @@ export const useUserInfo= create<{
 
   address?: string;
   setAddress: (v: string) => void;
+
+  latitude?: number;
+  setLatitude: (v: number) => void;
+
+  longitude?: number;
+  setLongitude: (v: number) => void;
 }>((set) => ({
   nickname: undefined,
   setNickname: (v) => set({ nickname: v }),
@@ -51,6 +57,12 @@ export const useUserInfo= create<{
 
   address: undefined,
   setAddress: (v) => set({ address: v }),
+
+  latitude: undefined,
+  setLatitude: (v) => set({ latitude: v }),
+
+  longitude: undefined,
+  setLongitude: (v) => set({ longitude: v }),
 }));
 
 export const useUserLocationNew= create<{

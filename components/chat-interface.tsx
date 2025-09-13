@@ -21,7 +21,7 @@ import { IconMenu } from "@/components/icon-menu"
 import { IconSettings } from "@/components/icon-settings"
 import { MapLayout } from "@/components/map-layout"
 import { chatInterfaceTemplate } from "@/lib/template"
-import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
+import { Send, LogOut, Home, Activity, Clock, Plus, Navigation, Phone } from "lucide-react"
 
 type WelcomTemlate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
 type EvaluatingTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; nextConnect: boolean;}[];
@@ -215,6 +215,22 @@ export function ChatInterface() {
 
       console.log("[chat-interface] recommendHospitals : ", recommendResult);
 
+      // 진료과로 병원검색
+      // const searchHospitalsByDiseaseId = await fetch(`/api/medical/hospitals`, {
+      //   method: "GET",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     "Authorization": `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     "disease_id": disease_id,
+      //   }),
+      // });
+
+      // const searchedResult = await searchHospitalsByDiseaseId.json();
+
+      // console.log("[chat-interface] recommendHospitals : ", searchedResult);
+
       //return user_message.content;
 
       return recommendResult.recommendations;
@@ -325,7 +341,8 @@ export function ChatInterface() {
         // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
 
         if (top_disease) {
-          if (confidence >= 0.8) {
+          if (confidence >= 0.1) {
+          // if (confidence >= 0.8) {
             setDiseaseName(top_disease);
 
             return [top_disease, confidence, formatted_message];
@@ -418,23 +435,16 @@ export function ChatInterface() {
       //setMessageStep(messageStep + 1);
       setActiveTyping(false);
 
-      Object.assign(botMessage, {
-        id: Date.now().toString(),
-        timestamp: new Date(),
-        content: getMessage("hospitals", diseaseName, recommendedHospitals),
-        sender: "bot"
-      });
+      Object.assign(botMessage, getMessage("hospitals", diseaseName, recommendedHospitals));
     
     // 종료
     } else if (_message.includes('아니요')) {
       setActiveTyping(false);
       
-      Object.assign(botMessage, {
+      Object.assign(botMessage, Object.assign({
         id: Date.now().toString(),
         timestamp: new Date(),
-        content: getMessage("adios"),
-        sender: "bot"
-      });
+      }, getMessage("adios")));
 
     // 다른걸 입력했다 ?
     } else {
@@ -462,6 +472,57 @@ export function ChatInterface() {
     //   setMessages((prev) => [...prev, botMessage])
     //   setIsTyping(false)
     // }, 1500);
+  }
+
+    // chatbox Map 메시지 전송
+  const handleMapMessage = async (e: any) => {
+    e.preventDefault()
+
+    const hospitalInfo = e.currentTarget.name;
+    const [hospitalName, hospitalAddress] = hospitalInfo.split('^');
+
+    console.log('hospitalName : ', hospitalName, ', hospitalAddress : ', hospitalAddress);
+
+    const getHospitalId = await fetch(`/api/medical/hospitals?search=${encodeURIComponent(hospitalName)}&department_id=${null}&disease_id=${null}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const hospitalInfoResult = await getHospitalId.json();
+    const hospitalId = hospitalInfoResult[0].id;
+
+    console.log('hospitalId id:: ', hospitalId);
+
+    const hospitalLocation = await fetch(`/api/medical/hospitals/${hospitalId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const hospitalLocationResult = await hospitalLocation.json();
+
+    console.log('hospitalLocationResult:: ', hospitalLocationResult);
+
+    //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
+    setUserStep(userStep + 1);
+    setMessageStep(messageStep + 1);
+    setMessages((prev) => [...prev, {
+      id: Date.now().toString(),
+      content: [`${hospitalName}`, `${hospitalAddress}`],
+      sender: "bot",
+      type: "map",
+      timestamp: new Date(),
+      hospitalName,
+      latitude: hospitalLocationResult.latitude,
+      longitude: hospitalLocationResult.longitude,
+    }]);
+    setInputMessage("");
+    setIsTyping(true);
+    setActiveTyping(true);
   }
 
   // 로그아웃 버튼 클릭
@@ -755,7 +816,7 @@ export function ChatInterface() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleButtonClick(_button)}
-                              className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white"
+                              className="cursor-pointer not-first:bg-gray-50 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white"
                             >
                               {_button}
                             </Button>
@@ -763,9 +824,83 @@ export function ChatInterface() {
                         </div>
                       )}
   
+                      {message.type === "mapList" && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {/* <MapLayout locations={message.location}/> */}
+                          {message.location.map((_locationItem: any) => (
+                            <div
+                              key={_locationItem.id ?? `${_locationItem.name}-${_locationItem.phone ?? ''}`}
+                              className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
+                                'bg-blue-50 border-blue-200'
+                                // selectedFacility?.id === message.id ? 'bg-blue-50 border-blue-200' : ''
+                              }`}
+                              // onClick={() => {handleFacilityClick(facility)}}
+                              >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-900">{_locationItem.name}</h4>
+                                  <span
+                                  className={`px-2 py-1 text-xs rounded-full ${
+                                    'bg-red-100 text-red-700'
+                                    /*message.type === 'Hospital'
+                                    ? 'bg-red-100 text-red-700'
+                                    : message.type === 'Emergency'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-blue-100 text-blue-700'
+                                    */
+                                  }`}
+                                  >
+                                  {_locationItem.hospital_type_name}
+                                  </span>
+                                </div>
+
+                                {_locationItem.recommended_reason && (
+                                  <p className="text-xs text-gray-500 mt-1">{_locationItem.recommended_reason}</p>
+                                )}
+
+                                <p className="text-sm text-gray-600 mt-1">{_locationItem.address}</p>
+
+                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                  {_locationItem.distance && (
+                                  <div className="flex items-center gap-1">
+                                    <Navigation className="w-3 h-3" />
+                                    {_locationItem.distance}
+                                  </div>
+                                  )}
+                                  {_locationItem.phone && (
+                                  <div className="flex items-center gap-1">
+                                    <Phone className="w-3 h-3" />
+                                    {_locationItem.phone}
+                                  </div>
+                                  )}
+                                </div>
+                                </div>
+
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  name={`${_locationItem.name}^${_locationItem.address}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleMapMessage(e);
+                                    //getDirections(facility)
+                                  }}
+                                  className="ml-2 cursor-pointer flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
+                                >
+                                  <Navigation className="w-3 h-3 mr-1" />
+                                  Directions
+                                </Button>
+                              </div>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+
                       {message.type === "map" && (
                         <div className="flex flex-wrap gap-2 mt-4">
-                          <MapLayout locations={message.location}/>
+                          <MapLayout latitude={message.latitude} longitude={message.longitude} />
+                          {/* <MapLayout name="" address="" latitude={message.latitude} longitude={message.longitude} /> */}
                         </div>
                       )}
                     </div>

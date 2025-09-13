@@ -54,7 +54,9 @@ export function LoginForm() {
       useUserInfo.getState().setGender(`${user.gender}`);
       useUserInfo.getState().setLocation(`${user.location}`);
       useUserInfo.getState().setAddress(`${user.road_address}` || '');
-      useUserLocationNew.getState().setAddress(user.road_address || '');
+
+      useUserInfo.getState().setLatitude(user.latitude || '');
+      useUserInfo.getState().setLongitude(user.longitude || '');
 
       // Store login state (simple localStorage for demo)
       localStorage.setItem("isLoggedIn", "true");

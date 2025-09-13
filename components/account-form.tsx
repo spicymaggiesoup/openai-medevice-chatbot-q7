@@ -33,7 +33,7 @@ export function AccountForm({ onClose }: AccountFormProps) {
   const age = useUserInfo((s) => s.age)
   const password = useUserInfo((s) => s.password)
 
-  const address = useUserLocationNew((s) => s.address)
+  const address = useUserInfo((s) => s.address)
   const setAddress = useUserLocationNew((s) => s.setAddress)
 
   const {
@@ -76,7 +76,10 @@ export function AccountForm({ onClose }: AccountFormProps) {
       body: JSON.stringify({ road_address: newAddress }),
     })
     const userLocation = await r.json()
-    console.log('[account-form] User Location :: ', userLocation)
+    console.log('[account-form] User Location :: ', userLocation);
+
+    useUserInfo.getState().setLatitude(userLocation.latitude || '');
+    useUserInfo.getState().setLongitude(userLocation.longitude || '');
 
     onClose()
   };
@@ -159,7 +162,7 @@ export function AccountForm({ onClose }: AccountFormProps) {
               <Input
                 id="address"
                 name="address"
-                value={useUserLocationNew((s) => s.address)}
+                value={address}
                 onChange={handleInputChange}
                 readOnly
                 className="cursor-default mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
