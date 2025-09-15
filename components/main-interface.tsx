@@ -43,7 +43,7 @@ const INTERFACE_TEMPLATE: any /*{
 
 const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
 
-export function ChatInterface() {
+export function MainInterface() {
   const typingRef = useRef(null);
   const chatRef = useRef<HTMLDivElement | null>(null);   // ★ 추가
 
@@ -526,12 +526,6 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, locationMessage])
   }
 
-  const scrollToBottom = () => {
-    if (chatRef.current !== null) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  };
-
   // 로그인 chatrooms 조회 & 생성
   useEffect(() => {
     // 메시지 스텝 +1 (welcome 다음)
@@ -617,11 +611,10 @@ export function ChatInterface() {
   }, []);
 
   useEffect(() => {
-    // window.scrollTo({
-    //   top: document.body.scrollHeight, // Scrolls to the maximum scroll height of the document body
-    //   behavior: 'smooth' // Enables smooth scrolling animation
-    // });
-    scrollToBottom();
+    window.scrollTo({
+      top: document.body.scrollHeight, // Scrolls to the maximum scroll height of the document body
+      behavior: 'smooth' // Enables smooth scrolling animation
+    });
   }, [messages]);
 
   return (

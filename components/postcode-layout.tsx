@@ -44,7 +44,10 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
   const onCompletePost = (data: Address) => {
     console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
     useUserLocationNew.getState().setAddress(data.roadAddress);
-    //setAddress(data.roadAddress);        // 도로명/지번 등 라이브러리가 가공한 최종 주소
+    useUserInfo.getState().setAddress(data.roadAddress);
+    setAddress(data.roadAddress);       
+    
+    // 도로명/지번 등 라이브러리가 가공한 최종 주소
     //setShowDetailAddressInput(true); // 상세주소 입력칸 표시
     //onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
   }; 
@@ -54,7 +57,6 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
       <CardHeader>
         <CardTitle className="flex items-center">
           <div className="w-full flex items-center content-center gap-2">
-            {/* <MapPin className="w-5 h-5 text-teal-500" /> */}
             주소검색
           </div>
           <div

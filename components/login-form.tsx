@@ -4,17 +4,21 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+
 import { useChatToken, useUserInfo, useUserLocationNew } from "@/lib/store";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediLogo } from "@/components/medi-logo"
+import { UserAccountForm } from "@/components/user-account-form"
 
 export function LoginForm() {
   const [email, setEmail] = useState("test1@test.com");
   const [password, setPassword] = useState("test1234");
   const [isLoading, setIsLoading] = useState(false);
+  const [showAccountForm, setShowAccountForm] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
   
@@ -72,7 +76,15 @@ export function LoginForm() {
       setError(`계정정보가 잘못되었습니다. 아이디와 비밀번호를 다시 확인해주세요. ID: ${email}, Password: ${password}`)
 
     }
-  }
+  };
+
+  const handleCreateAccountPopup = async (e: React.FormEvent) => {
+    setShowAccountForm(true);
+  };
+
+  const handleKakaoLogIn = async (e: React.FormEvent) => {
+    
+  };
 
   return (
     <Card className="w-full">
@@ -125,12 +137,54 @@ export function LoginForm() {
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             계정이 없으면{" "}
+            {/* <button 
+              onClick={handleKakaoLogIn}
+              className="cursor-pointer text-green-700 hover:font-semibold"
+            >카카오톡 로그인을 진행하세요.
+            </button> */}
             <button 
-              className="text-green-700 hover:font-semibold"
+              onClick={handleCreateAccountPopup}
+              className="cursor-pointer text-green-700 hover:font-semibold"
             >회원가입을 진행하세요.
             </button>
           </p>
         </div>
+        <AnimatePresence>
+          {showAccountForm && (
+            <motion.div
+              {...({
+                className:
+                  "fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50",
+                initial: { opacity: 0 },
+                animate: { opacity: 1 },
+                exit: { opacity: 0 },
+                transition: { duration: 0.5 },
+              } as any)}
+            >
+              <motion.div
+                {...({
+                  className: "relative",
+                  initial: { scale: 0.95, opacity: 0 },
+                  animate: { scale: 1, opacity: 1 },
+                  exit: { scale: 0.95, opacity: 0 },
+                  transition: { duration: 0.5 },
+                } as any)}
+              >
+                <UserAccountForm 
+                  onClose={() => {
+                    setShowAccountForm(false)
+                  }}
+                />
+                <button
+                  onClick={() => setShowAccountForm(false)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </CardContent>
     </Card>
   )

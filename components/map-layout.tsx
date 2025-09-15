@@ -14,8 +14,6 @@ export function MapLayout(...props: any) {
   //
   const [isOpen, setIsOpen] = useState(false)
 
-  const [mapPins, setMapPins] = useState([]);
-
   const [lat, setLat] = useState(latitude || 0);
   const [lng, setLng] = useState(longitude || 0);
 

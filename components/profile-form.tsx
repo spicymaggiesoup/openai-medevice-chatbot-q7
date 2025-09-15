@@ -20,11 +20,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 import { PostcodeLayout } from "@/components/postcode-layout"
 
-interface AccountFormProps {
+interface ProfileFormProps {
   onClose: () => void
 }
 
-export function AccountForm({ onClose }: AccountFormProps) {
+export function ProfileForm({ onClose }: ProfileFormProps) {
   //const handleUserAddress = () => useUserLocationNew((s) => s.address);
   
   const nickname = useUserInfo((s) => s.nickname)
@@ -76,17 +76,12 @@ export function AccountForm({ onClose }: AccountFormProps) {
       body: JSON.stringify({ road_address: newAddress }),
     })
     const userLocation = await r.json()
-    console.log('[account-form] User Location :: ', userLocation);
+    console.log('[profile-form] User Location :: ', userLocation);
 
     useUserInfo.getState().setLatitude(userLocation.latitude || '');
     useUserInfo.getState().setLongitude(userLocation.longitude || '');
 
     onClose()
-  };
-
-  // 주소를 스토어에 반영
-  const handleAddressForm = () => {
-    setAddress(formData.address || '')
   };
 
   // const handleSubmit = async(e: React.FormEvent) => {
@@ -135,7 +130,6 @@ export function AccountForm({ onClose }: AccountFormProps) {
              focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0
              focus:border-r-0 focus:shadow-none focus-visible:outline-none
              focus-visible:ring-0"
-                // className="user-select:none cursor-default mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
             <div>
@@ -167,14 +161,6 @@ export function AccountForm({ onClose }: AccountFormProps) {
                 readOnly
                 className="cursor-default mt-1 border border-b-teal-300 rounded-none focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
-              {/*<Button
-                  type="button"
-                  variant="ghost"
-                  className="cursor-pointer px-3 bg-transparent hover:bg-teal-50"
-                  onClick={onSearchAddressOpen}
-                >
-                <Search className="w-4 h-4" />
-              </Button>*/}
                <Popover open={showDetailAddressInput} onOpenChange={setShowDetailAddressInput}>
                 <PopoverTrigger asChild>
                   <Button
