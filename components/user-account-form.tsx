@@ -105,16 +105,15 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                 <span className="text-red-500">*</span>
                 아이디
               </Label>
-              <div className="flex">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full"
-                />
-              </div>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full"
+                required
+              />
             </div>
             <div>
               <Label htmlFor="password" className="flex items-center gap-2">
@@ -128,6 +127,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full"
+                required
               />
             </div>
           </div>
@@ -144,6 +144,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                 value={formData.nickName}
                 onChange={handleInputChange}
                 className="w-full"
+                required
               />
             </div>
             <div>
@@ -158,6 +159,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
               value={formData.age}
               onChange={handleInputChange}
               className="w-full"
+              required
             />
             </div>
           </div>
@@ -173,6 +175,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                 name="address"
                 onChange={handleInputChange}
                 className="w-full"
+                required
               />
                <Popover open={showDetailAddressInput} onOpenChange={setShowDetailAddressInput}>
                 <PopoverTrigger asChild>

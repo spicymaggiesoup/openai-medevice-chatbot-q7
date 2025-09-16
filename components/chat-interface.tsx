@@ -526,6 +526,50 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, locationMessage])
   }
 
+  const handleCreateNewChatRoom = async() => {
+    const rooms = `Room_${Math.floor(Math.random() * 900 + 100)}`;
+
+    console.log("[chat-interface] createChatRoom Title: ", rooms);
+
+    if (roomTitle) {
+      return false;
+    }
+
+    const createChatRooms = await fetch("/api/chat/rooms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title: rooms }),
+    });
+    
+    if (!createChatRooms.ok) {
+      const text = await createChatRooms.text();
+      console.error("[chat-interface] create room failed:", createChatRooms.status, text);
+      throw new Error(text || `HTTP ${createChatRooms.status}`);
+    }
+    
+    const {
+      title,
+      id,
+      final_disease_id,
+    } = await createChatRooms.json();
+
+    console.log("[chat-interface] New chatroom - ", `title: ${title}, id: ${id}, final_disease_id: ${final_disease_id}`);
+
+    // 채팅룸 정보저장
+    useChatRoom.getState().setTitle(`${title}`);
+    useChatRoom.getState().setId(id);
+    useChatRoom.getState().setFinalDiseaseId(final_disease_id);
+
+    setRoomTitle(title);
+    setRoomId(id);
+    setfinalDiseaseIdRoomId(final_disease_id);
+
+    return true;
+  }
+
   const scrollToBottom = () => {
     if (chatRef.current !== null) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
