@@ -154,7 +154,7 @@ export function LoginForm() {
             <motion.div
               {...({
                 className:
-                  "fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50",
+                  "fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50 p-6",
                 initial: { opacity: 0 },
                 animate: { opacity: 1 },
                 exit: { opacity: 0 },
@@ -175,12 +175,6 @@ export function LoginForm() {
                     setShowAccountForm(false)
                   }}
                 />
-                <button
-                  onClick={() => setShowAccountForm(false)}
-                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
-                >
-                  ×
-                </button>
               </motion.div>
             </motion.div>
           )}

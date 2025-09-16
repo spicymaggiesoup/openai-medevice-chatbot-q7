@@ -22,7 +22,7 @@ type PostcodeLayoutProps = {
   onClose: () => void;
 };
 
-export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
+export function PostcodeLayout({ onClose, onCompletePost }: PostcodeLayoutProps) {
   const [formData, setFormData] = useState({
     fullName: "",
     lastName: "",
@@ -41,7 +41,7 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
   const [addressDetail, setAddressDetail] = useState("");
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
 
-  const onCompletePost = (data: Address) => {
+  const handleCompletePost = (data: Address) => {
     console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
     useUserLocationNew.getState().setAddress(data.roadAddress);
     useUserInfo.getState().setAddress(data.roadAddress);
@@ -75,7 +75,7 @@ export function PostcodeLayout({ onClose }: PostcodeLayoutProps) {
           className="h-[70vh] max-h-[80vh]"
           style={{height:'100%'}}
           autoClose={false}
-          onComplete={onCompletePost}
+          onComplete={onCompletePost ||handleCompletePost}
         />
       </CardContent>
     </Card>

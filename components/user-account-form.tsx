@@ -36,6 +36,9 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
     longitude: 0,
   });
 
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
 
   const {
@@ -50,7 +53,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // 회원가입
     const r = await fetch('/api/auth/register', {
@@ -61,7 +64,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
       body: JSON.stringify({
         email: formData.email,
         nickname: formData.nickName,
-        age: formData.age,
+        age: Number(formData.age),
         gender: formData.gender,
         password: formData.password,
         road_address: formData.road_address,
@@ -69,13 +72,22 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
         longitude: 0,
       }),
     })
-    const userLocation = await r.json()
-    console.log('[user-account-form] User Location :: ', userLocation);
+    const { detail } = await r.json()
+    console.log('[user-account-form] User Location :: ', detail);
 
-    useUserInfo.getState().setLatitude(userLocation.latitude || '');
-    useUserInfo.getState().setLongitude(userLocation.longitude || '');
+    if (detail && detail[0]['loc']) {
 
+    }
   };
+
+  const handleCompletePost = (data: Address) => {
+    console.log('[user-account-form] User roadAddress ::: ', data.roadAddress);
+ 
+    setFormData(prev => ({
+      ...prev,
+      road_address: data.roadAddress,
+    }));
+  }
 
   return (
     <Card className="w-full max-w-md">
@@ -90,19 +102,23 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="email" className="flex items-center gap-2">
+                <span className="text-red-500">*</span>
                 아이디
               </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full"
-              />
+              <div className="flex">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="password" className="flex items-center gap-2">
+                <span className="text-red-500">*</span>
                 비밀번호
               </Label>
               <Input
@@ -118,7 +134,10 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="nickName" className="flex items-center gap-2">성명/닉네임</Label>
+              <Label htmlFor="nickName" className="flex items-center gap-2">
+                <span className="text-red-500">*</span>
+                성명/닉네임
+              </Label>
               <Input
                 id="nickName"
                 name="nickName"
@@ -129,6 +148,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
             </div>
             <div>
             <Label htmlFor="age" className="flex items-center gap-2">
+              <span className="text-red-500">*</span>
               나이
             </Label>
             <Input
@@ -144,6 +164,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
 
           <div>
             <Label htmlFor="address" className="flex items-center gap-2">
+              <span className="text-red-500">*</span>
               주소
             </Label>
             <div className="flex mt-1">
@@ -174,6 +195,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                     onClose={() => {
                       setShowDetailAddressInput(false)
                     }}
+                    onCompletePost={handleCompletePost}
                   />
                 </PopoverContent>
               </Popover> 
@@ -181,11 +203,13 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
           </div>
 
           <div className="flex gap-3 pt-4">
+            {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
             <Button
-              type="submit"
-              className="flex-1 cursor-pointer w-full bg-emerald-600 hover:bg-emerald/90 text-primary-foreground"
+                type="submit"
+                className="flex-1 bg-teal-500 hover:bg-teal-600 cursor-pointer"
+                disabled={isLoading}
             >
-              가입하기
+                {isLoading ? (<span>잠시만 기다려주세요 ...<span className="dots">...</span></span>) : (<span>가입하기</span>)}
             </Button>
             <Button
               type="button"
