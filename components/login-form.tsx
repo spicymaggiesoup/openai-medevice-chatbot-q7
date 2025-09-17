@@ -72,9 +72,12 @@ export function LoginForm() {
       setIsLoading(false);
 
     } catch(e) {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
       setError(`계정정보가 잘못되었습니다. 아이디와 비밀번호를 다시 확인해주세요. ID: ${email}, Password: ${password}`)
+      setIsLoading(false);
 
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     }
   };
 

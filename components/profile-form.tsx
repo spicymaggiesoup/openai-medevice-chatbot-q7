@@ -84,6 +84,17 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
     onClose()
   };
 
+  const handleCompletePost = (data: Address) => {
+    console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
+    useUserLocationNew.getState().setAddress(data.roadAddress);
+    useUserInfo.getState().setAddress(data.roadAddress);
+    setAddress(data.roadAddress);       
+    
+    // 도로명/지번 등 라이브러리가 가공한 최종 주소
+    //setShowDetailAddressInput(true); // 상세주소 입력칸 표시
+    //onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
+  }; 
+
   // const handleSubmit = async(e: React.FormEvent) => {
   //   e.preventDefault()
 
@@ -182,6 +193,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
                     onClose={() => {
                       setShowDetailAddressInput(false)
                     }}
+                    onCompletePost={handleCompletePost}
                   />
                 </PopoverContent>
               </Popover> 

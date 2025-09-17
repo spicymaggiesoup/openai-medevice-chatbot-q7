@@ -41,16 +41,16 @@ export function PostcodeLayout({ onClose, onCompletePost }: PostcodeLayoutProps)
   const [addressDetail, setAddressDetail] = useState("");
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
 
-  const handleCompletePost = (data: Address) => {
-    console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
-    useUserLocationNew.getState().setAddress(data.roadAddress);
-    useUserInfo.getState().setAddress(data.roadAddress);
-    setAddress(data.roadAddress);       
+//   const handleCompletePost = (data: Address) => {
+//     console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
+//     useUserLocationNew.getState().setAddress(data.roadAddress);
+//     useUserInfo.getState().setAddress(data.roadAddress);
+//     setAddress(data.roadAddress);       
     
-    // 도로명/지번 등 라이브러리가 가공한 최종 주소
-    //setShowDetailAddressInput(true); // 상세주소 입력칸 표시
-    //onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
-  }; 
+//     // 도로명/지번 등 라이브러리가 가공한 최종 주소
+//     //setShowDetailAddressInput(true); // 상세주소 입력칸 표시
+//     //onSearchAddressClose();          // 💡여기 '()' 꼭 필요!
+//   }; 
 
   return (
     <Card className="w-full h-[50vh] max-h-[50vh] bg-white border-0 shadow-none">
@@ -75,7 +75,7 @@ export function PostcodeLayout({ onClose, onCompletePost }: PostcodeLayoutProps)
           className="h-[70vh] max-h-[80vh]"
           style={{height:'100%'}}
           autoClose={false}
-          onComplete={onCompletePost ||handleCompletePost}
+          onComplete={onCompletePost}
         />
       </CardContent>
     </Card>

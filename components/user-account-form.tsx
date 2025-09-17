@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation";
 
 import { useDisclosure } from "@chakra-ui/react";
 
@@ -14,6 +15,7 @@ import { useChatToken, useUserInfo, useUserLocationNew } from "@/lib/store";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectTrigger, SelectContent, SelectGroup, SelectItem, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
@@ -39,13 +41,9 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
+  const [showAddressPopover, setShowAddressPopover] = useState(false);
 
-  const {
-    isOpen: isSearchAddressOpen,
-    onOpen: onSearchAddressOpen,
-    onClose: onSearchAddressClose,
-  } = useDisclosure();
+  const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -55,39 +53,48 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 회원가입
-    const r = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: formData.email,
-        nickname: formData.nickName,
-        age: Number(formData.age),
-        gender: formData.gender,
-        password: formData.password,
-        road_address: formData.road_address,
-        latitude: 0,
-        longitude: 0,
-      }),
-    })
-    const { detail } = await r.json()
-    console.log('[user-account-form] User Location :: ', detail);
+    console.log('콘솔 회원가입 :: ', formData);
 
-    if (detail && detail[0]['loc']) {
+    setIsLoading(true);
 
+    try {
+      // 회원가입
+      const r = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          nickname: formData.nickName,
+          age: Number(formData.age),
+          gender: formData.gender,
+          password: formData.password,
+          road_address: formData.road_address,
+          latitude: 0,
+          longitude: 0,
+        }),
+      })
+      const { detail } = await r.json()
+      console.log('[user-account-form] User Location :: ', detail);
+
+      if (detail && detail[0]['loc']) {
+
+      }
+    
+      setIsLoading(false);
+
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+
+    } catch(e) {
+      console.error(e);
+      setError(`회원가입 정보를 다시 확인해주세요.`);
     }
+    
   };
-
-  const handleCompletePost = (data: Address) => {
-    console.log('[user-account-form] User roadAddress ::: ', data.roadAddress);
- 
-    setFormData(prev => ({
-      ...prev,
-      road_address: data.roadAddress,
-    }));
-  }
 
   return (
     <Card className="w-full max-w-md">
@@ -132,7 +139,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label htmlFor="nickName" className="flex items-center gap-2">
                 <span className="text-red-500">*</span>
@@ -162,28 +169,56 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
               required
             />
             </div>
+            <div>
+              <Label htmlFor="age" className="flex items-center gap-2">
+                <span className="text-red-500">*</span>
+                성별
+              </Label>
+              <Select
+                value={formData.gender}
+                onValueChange={(value) => {
+                  console.log(value);
+
+                  setFormData(prev => ({
+                    ...prev,
+                    gender: value,
+                  }));
+                }}
+              >
+                <SelectTrigger id="gender" variant="ghost">
+                <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectGroup>
+                    <SelectItem value="Male">남성</SelectItem>
+                    <SelectItem value="Female">여성</SelectItem>
+                </SelectGroup>
+                </SelectContent>
+            </Select>
+            </div>
           </div>
 
           <div>
-            <Label htmlFor="address" className="flex items-center gap-2">
+            <Label htmlFor="road_address" className="flex items-center gap-2">
               <span className="text-red-500">*</span>
               주소
             </Label>
             <div className="flex mt-1">
               <Input
-                id="address"
-                name="address"
+                id="road_address"
+                name="road_address"
+                value={formData.road_address}
                 onChange={handleInputChange}
                 className="w-full"
                 required
               />
-               <Popover open={showDetailAddressInput} onOpenChange={setShowDetailAddressInput}>
+               <Popover open={showAddressPopover} onOpenChange={setShowAddressPopover}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
                     variant="ghost"
                     className="cursor-pointer px-3 bg-transparent hover:bg-teal-50"
-                    onClick={onSearchAddressOpen}
+                    onClick={() => setShowAddressPopover(true)}
                   >
                   <Search className="w-4 h-4" />
                 </Button>
@@ -196,9 +231,16 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                   >
                   <PostcodeLayout
                     onClose={() => {
-                      setShowDetailAddressInput(false)
+                        setShowAddressPopover(false)
                     }}
-                    onCompletePost={handleCompletePost}
+                    onCompletePost={(data) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        road_address: data.roadAddress,
+                      }));
+                  
+                      setShowAddressPopover(false);
+                    }}
                   />
                 </PopoverContent>
               </Popover> 
@@ -212,7 +254,7 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
                 className="flex-1 bg-teal-500 hover:bg-teal-600 cursor-pointer"
                 disabled={isLoading}
             >
-                {isLoading ? (<span>잠시만 기다려주세요 ...<span className="dots">...</span></span>) : (<span>가입하기</span>)}
+                {isLoading ? (<span>가입 중...<span className="dots">...</span></span>) : (<span>가입하기</span>)}
             </Button>
             <Button
               type="button"
