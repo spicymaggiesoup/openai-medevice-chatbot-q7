@@ -599,7 +599,7 @@ export function ChatInterface() {
     } 
 
     // chat rooms 조회
-    (async () => {
+    /*(async () => {
       try {        
         const getChatRooms = await fetch("/api/chat/rooms", {
           method: "GET",
@@ -657,7 +657,7 @@ export function ChatInterface() {
 
       // 임시 deptnm
       useMedicalDepartments.getState().setDepartment("내과");
-    })();
+    })();*/
 
     return () => {
       cancelled = true;

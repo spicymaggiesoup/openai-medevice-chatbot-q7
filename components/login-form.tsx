@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediLogo } from "@/components/medi-logo"
 import { UserAccountForm } from "@/components/user-account-form"
+import { HomeInterface } from "@/components/home-interface"
 
 export function LoginForm() {
   const [email, setEmail] = useState("test1@test.com");
@@ -68,6 +69,7 @@ export function LoginForm() {
 
       // chat 이동
       router.push("/chat");
+      //router.push("/home");
 
       setIsLoading(false);
 
