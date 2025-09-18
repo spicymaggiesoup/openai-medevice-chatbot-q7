@@ -576,6 +576,10 @@ export function ChatInterface() {
     }
   };
 
+  useEffect(() => {
+    
+  }, [])
+
   // 로그인 chatrooms 조회 & 생성
   useEffect(() => {
     // 메시지 스텝 +1 (welcome 다음)
@@ -660,11 +664,8 @@ export function ChatInterface() {
     };
   }, []);
 
+  // 스크롤 이동
   useEffect(() => {
-    // window.scrollTo({
-    //   top: document.body.scrollHeight, // Scrolls to the maximum scroll height of the document body
-    //   behavior: 'smooth' // Enables smooth scrolling animation
-    // });
     scrollToBottom();
   }, [messages]);
 
