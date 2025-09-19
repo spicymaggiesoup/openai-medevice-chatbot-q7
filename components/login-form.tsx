@@ -68,8 +68,8 @@ export function LoginForm() {
       localStorage.setItem("userId", user.id);
 
       // chat 이동
-      router.push("/chat");
-      //router.push("/home");
+      //router.push("/chat");
+      router.push("/home");
 
       setIsLoading(false);
 
