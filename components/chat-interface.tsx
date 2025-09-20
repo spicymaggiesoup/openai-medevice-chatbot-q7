@@ -244,13 +244,13 @@ export function ChatInterface() {
 
         const chatRooms = await sendChatMessage.json();
 
-        const { bot_message, user_message} = chatRooms;
+        const { bot_response, message} = chatRooms;
 
-        console.log("[chat-interface] Send message :bot_message: ", bot_message);
-        console.log("[chat-interface] Send message :user_message: ", user_message);
+        console.log("[chat-interface] Send message :bot_message: ", bot_response);
+        console.log("[chat-interface] Send message :user_message: ", message);
 
         // {id: 3, message_type: 'USER', content: '허리가 아파요.', created_at: '2025-09-11T14:24:19.250527'}
-        return user_message.content;
+        return message.content;
 
       } catch(e) {
         console.error(e);
