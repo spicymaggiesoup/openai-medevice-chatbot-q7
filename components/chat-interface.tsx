@@ -91,78 +91,78 @@ export function ChatInterface() {
   const token = useChatToken((s) => s.chatToken);
 
   // URL
-  let url = new URL( `/api/chat/ws/${roomId}`, WS_BASE);
-  const ws_url = `${url.href}?token=${token}`;
+  // let url = new URL( `/api/chat/ws/${roomId}`, WS_BASE);
+  // const ws_url = `${url.href}?token=${token}`;
 
-  const connect = useCallback(() => {
-    if (stopReconnectRef.current) {
-      console.warn("[WS] reconnect stopped.");
-      return;
-    }
+  // const connect = useCallback(() => {
+  //   if (stopReconnectRef.current) {
+  //     console.warn("[WS] reconnect stopped.");
+  //     return;
+  //   }
 
-    console.log("Websocket URL :: ", ws_url);
+  //   console.log("Websocket URL :: ", ws_url);
 
-    const ws = new WebSocket(ws_url);
-    wsRef.current = ws;
+  //   const ws = new WebSocket(ws_url);
+  //   wsRef.current = ws;
 
-    ws.onopen = () => {
-      console.log("[WS] OPEN", token, url);
-      reconnectDelayRef.current = 1000;
+  //   ws.onopen = () => {
+  //     console.log("[WS] OPEN", token, url);
+  //     reconnectDelayRef.current = 1000;
 
-      // 큐 flush
-      queueRef.current.splice(0).forEach((msg) =>
-        ws.send(JSON.stringify(msg))
-      );
-    };
+  //     // 큐 flush
+  //     queueRef.current.splice(0).forEach((msg) =>
+  //       ws.send(JSON.stringify(msg))
+  //     );
+  //   };
 
-    ws.onmessage = (e) => {
-      let data: WsMsg;
-      try {
-        data = JSON.parse(e.data);
-      } catch {
-        return;
-      }
+  //   ws.onmessage = (e) => {
+  //     let data: WsMsg;
+  //     try {
+  //       data = JSON.parse(e.data);
+  //     } catch {
+  //       return;
+  //     }
 
-      if ("id" in data && (data as any).status !== undefined) {
-        const slot = pendingRef.current.get(data.id);
-        if (slot) {
-          pendingRef.current.delete(data.id);
-          clearTimeout(slot.t);
-          slot.resolve(data);
-        }
-      } else if ("event" in data) {
-        const handlers = listenersRef.current.get(data.event);
-        handlers?.forEach((h) => h(data.data));
-      }
-    };
+  //     if ("id" in data && (data as any).status !== undefined) {
+  //       const slot = pendingRef.current.get(data.id);
+  //       if (slot) {
+  //         pendingRef.current.delete(data.id);
+  //         clearTimeout(slot.t);
+  //         slot.resolve(data);
+  //       }
+  //     } else if ("event" in data) {
+  //       const handlers = listenersRef.current.get(data.event);
+  //       handlers?.forEach((h) => h(data.data));
+  //     }
+  //   };
 
-    ws.onerror = (err) => {
-      console.warn("[WS] ERROR", err);
-      // 재연결 멈춤 플래그 ON
-      stopReconnectRef.current = true;
-      try {
-        //ws.close(); // onclose로 이어짐
-      } catch {}
-    };
+  //   ws.onerror = (err) => {
+  //     console.warn("[WS] ERROR", err);
+  //     // 재연결 멈춤 플래그 ON
+  //     stopReconnectRef.current = true;
+  //     try {
+  //       //ws.close(); // onclose로 이어짐
+  //     } catch {}
+  //   };
 
-    ws.onclose = (ev) => {
-      console.warn("[WS] CLOSE", {
-        code: ev.code,
-        reason: ev.reason,
-        wasClean: ev.wasClean,
-      });
+  //   ws.onclose = (ev) => {
+  //     console.warn("[WS] CLOSE", {
+  //       code: ev.code,
+  //       reason: ev.reason,
+  //       wasClean: ev.wasClean,
+  //     });
 
-      if (!stopReconnectRef.current) {
-        setTimeout(connect, reconnectDelayRef.current);
-        reconnectDelayRef.current = Math.min(
-          reconnectDelayRef.current * 2,
-          15000
-        );
-      } else {
-        console.warn("[WS] reconnect disabled by stop flag.");
-      }
-    };
-  }, [url, token]);
+  //     if (!stopReconnectRef.current) {
+  //       setTimeout(connect, reconnectDelayRef.current);
+  //       reconnectDelayRef.current = Math.min(
+  //         reconnectDelayRef.current * 2,
+  //         15000
+  //       );
+  //     } else {
+  //       console.warn("[WS] reconnect disabled by stop flag.");
+  //     }
+  //   };
+  // }, [url, token]);
 
   // messages on template 가져오기
   const getMessage = (_step: any, symptom?: string, list?:string[]) => 
@@ -595,14 +595,14 @@ export function ChatInterface() {
     return true;
   }
 
-  useEffect(() => {
-    connect();
+  // useEffect(() => {
+  //   connect();
 
-    return () => {
-      wsRef.current?.close();
-      wsRef.current = undefined;
-    };
-  }, [connect]);
+  //   return () => {
+  //     wsRef.current?.close();
+  //     wsRef.current = undefined;
+  //   };
+  // }, [connect]);
 
   // 로그인 chatrooms 조회 & 생성
   useEffect(() => {
