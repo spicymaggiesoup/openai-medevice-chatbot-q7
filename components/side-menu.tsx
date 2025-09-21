@@ -4,9 +4,9 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MediBot } from "@/components/medi-bot"
-import { MediLogo } from "@/components/medi-logo"
-import { IconMenu } from "@/components/icon-menu"
+import { MediBot } from "@/components/img/medi-bot"
+import { MediLogo } from "@/components/img/medi-logo"
+import { IconMenu } from "@/components/icon/icon-menu"
 import { Send, LogOut, Home, Activity, Clock, Plus } from "lucide-react"
 
 interface Message {

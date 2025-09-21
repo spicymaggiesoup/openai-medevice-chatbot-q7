@@ -39,7 +39,7 @@ const INTERFACE_TEMPLATE: any /*{
 
 const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
 
-export function ChatInterface() {
+export function ChatHistoryInterface() {
   const typingRef = useRef(null);
   const chatRef = useRef<HTMLDivElement | null>(null);   // ★ 추가
 
@@ -84,7 +84,7 @@ export function ChatInterface() {
   >(new Map());
   const queueRef = useRef<WsMsg[]>([]);
   const listenersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
-  const reconnectDelayRef = useRef(10000);
+  const reconnectDelayRef = useRef(1000);
   const stopReconnectRef = useRef(false);
 
   // 토큰
@@ -141,7 +141,7 @@ export function ChatInterface() {
       // 재연결 멈춤 플래그 ON
       stopReconnectRef.current = true;
       try {
-        //ws.close(); // onclose로 이어짐
+        ws.close(); // onclose로 이어짐
       } catch {}
     };
 
@@ -621,13 +621,11 @@ export function ChatInterface() {
   }, []);
 
   return (
-    <div
-      className="flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden"
-      >
+    <div className="h-dvh bg-emerald-50">
       {/* 스크롤 영역 */}
       <div
         ref={chatRef}
-        className="flex-1 min-h-0 overflow-y-auto p-6">
+        className="overflow-y-auto p-6 ">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
@@ -708,7 +706,7 @@ export function ChatInterface() {
       </div>
 
       {/* 입력 영역 (Footer) */}
-      <div className="shrink-0 bg-white border-t border-gray-200 p-4">
+      <div className="bg-white border-t border-gray-200 p-4">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSendMessage} className="flex gap-3">
             <Input

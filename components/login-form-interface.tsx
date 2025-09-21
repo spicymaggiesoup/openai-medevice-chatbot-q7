@@ -11,9 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MediLogo } from "@/components/medi-logo"
+import { MediLogo } from "@/components/img/medi-logo"
 import { UserAccountForm } from "@/components/user-account-form"
-import { HomeInterface } from "@/components/home-interface"
 
 export function LoginForm() {
   const [email, setEmail] = useState("test1@test.com");
@@ -67,9 +66,8 @@ export function LoginForm() {
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userId", user.id);
 
-      // chat 이동
-      router.push("/chat");
-      //router.push("/home");
+      // 페이지 이동
+      router.push("/home");
 
       setIsLoading(false);
 
@@ -85,10 +83,6 @@ export function LoginForm() {
 
   const handleCreateAccountPopup = async (e: React.FormEvent) => {
     setShowAccountForm(true);
-  };
-
-  const handleKakaoLogIn = async (e: React.FormEvent) => {
-    
   };
 
   return (

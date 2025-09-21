@@ -1,5 +1,4 @@
-import { LoginForm } from "@/components/login-form"
-import { EchoTest } from "@/components/echo-test"
+import { LoginForm } from "@/components/login-form-interface"
 
 export default function HomePage() {
   return (

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://medic.yoon.today";
-export const WS_BASE = process.env.NEXT_PUBLIC_BACKEND_WS_URL;
+export const WS_BASE = process.env.NEXT_PUBLIC_WS_URL;
 
 // 회원가입
 export async function REGISTER_MEMVER(req: Request) {

@@ -14,12 +14,12 @@ import { API_BASE, WS_BASE } from "@/lib/proxy";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { MediBot } from "@/components/medi-bot"
-import { MediLogo } from "@/components/medi-logo"
+import { MediBot } from "@/components/img/medi-bot"
+import { MediLogo } from "@/components/img/medi-logo"
 import { ProfileForm } from "@/components/profile-form"
 
-import { IconMenu } from "@/components/icon-menu"
-import { IconSettings } from "@/components/icon-settings"
+import { IconMenu } from "@/components/icon/icon-menu"
+import { IconSettings } from "@/components/icon/icon-settings"
 import { MapLayout } from "@/components/map-layout"
 import { chatInterfaceTemplate } from "@/lib/template"
 import { Send, LogOut, Home, Activity, Clock, Plus, Navigation, Phone } from "lucide-react"
@@ -35,7 +35,7 @@ type WsMsg =
 /**
  * React 훅 형태의 WebSocket RPC 클라이언트
  */
-export function HomeInterface() {
+export function HomeInterface2() {
   const wsRef = useRef<WebSocket | null | undefined>(null);
   const pendingRef = useRef<
     Map<string, { resolve: (v: any) => void; reject: (e: any) => void; t: number }>
