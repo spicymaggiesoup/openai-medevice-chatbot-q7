@@ -91,7 +91,7 @@ export function ChatHistoryInterface() {
   const token = useChatToken((s) => s.chatToken);
 
   // URL
-  let url = new URL(`${WS_BASE}/api/chat/ws/${roomId}`);
+  let url = new URL( `/api/chat/ws/${roomId}`, WS_BASE);
   const ws_url = `${url.href}?token=${token}`;
 
   const connect = useCallback(() => {

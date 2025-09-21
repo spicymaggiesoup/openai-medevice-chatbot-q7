@@ -47,7 +47,7 @@ export function HomeInterface2() {
   // 토큰
   const token = useChatToken((s) => s.chatToken);
 
-  const url = new URL(`${WS_BASE}/api/chat/ws/146`);
+  let url = new URL( `/api/chat/ws/146`, WS_BASE);
 
   const connect = useCallback(() => {
     //if (token) { u.searchParams.set('token', token); }
