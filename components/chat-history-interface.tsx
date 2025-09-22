@@ -8,7 +8,6 @@ import { redirect, useRouter } from "next/navigation";
 
 // import Hanspell  from "hanspell";
 
-import { API_BASE, WS_BASE } from "@/lib/proxy";
 import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"

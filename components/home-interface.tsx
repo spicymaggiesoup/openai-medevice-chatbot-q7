@@ -76,7 +76,7 @@ export function HomeInterface() {
   const handleInnerSize = () => window.innerWidth <= 768;
 
   // 토큰
-  const token = useChatToken((s) => s.chatToken);
+  // const token = useChatToken((s) => s.chatToken);
 
   // 로그아웃 버튼 클릭
   const handleLogout = async() => {

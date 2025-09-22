@@ -8,7 +8,6 @@ import { redirect, useRouter } from "next/navigation";
 
 // import Hanspell  from "hanspell";
 
-import { API_BASE, WS_BASE } from "@/lib/proxy";
 import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
@@ -90,79 +89,6 @@ export function ChatInterface() {
   // 토큰
   const token = useChatToken((s) => s.chatToken);
 
-  // URL
-  // let url = new URL( `/api/chat/ws/${roomId}`, WS_BASE);
-  // const ws_url = `${url.href}?token=${token}`;
-
-  // const connect = useCallback(() => {
-  //   if (stopReconnectRef.current) {
-  //     console.warn("[WS] reconnect stopped.");
-  //     return;
-  //   }
-
-  //   console.log("Websocket URL :: ", ws_url);
-
-  //   const ws = new WebSocket(ws_url);
-  //   wsRef.current = ws;
-
-  //   ws.onopen = () => {
-  //     console.log("[WS] OPEN", token, url);
-  //     reconnectDelayRef.current = 1000;
-
-  //     // 큐 flush
-  //     queueRef.current.splice(0).forEach((msg) =>
-  //       ws.send(JSON.stringify(msg))
-  //     );
-  //   };
-
-  //   ws.onmessage = (e) => {
-  //     let data: WsMsg;
-  //     try {
-  //       data = JSON.parse(e.data);
-  //     } catch {
-  //       return;
-  //     }
-
-  //     if ("id" in data && (data as any).status !== undefined) {
-  //       const slot = pendingRef.current.get(data.id);
-  //       if (slot) {
-  //         pendingRef.current.delete(data.id);
-  //         clearTimeout(slot.t);
-  //         slot.resolve(data);
-  //       }
-  //     } else if ("event" in data) {
-  //       const handlers = listenersRef.current.get(data.event);
-  //       handlers?.forEach((h) => h(data.data));
-  //     }
-  //   };
-
-  //   ws.onerror = (err) => {
-  //     console.warn("[WS] ERROR", err);
-  //     // 재연결 멈춤 플래그 ON
-  //     stopReconnectRef.current = true;
-  //     try {
-  //       //ws.close(); // onclose로 이어짐
-  //     } catch {}
-  //   };
-
-  //   ws.onclose = (ev) => {
-  //     console.warn("[WS] CLOSE", {
-  //       code: ev.code,
-  //       reason: ev.reason,
-  //       wasClean: ev.wasClean,
-  //     });
-
-  //     if (!stopReconnectRef.current) {
-  //       setTimeout(connect, reconnectDelayRef.current);
-  //       reconnectDelayRef.current = Math.min(
-  //         reconnectDelayRef.current * 2,
-  //         15000
-  //       );
-  //     } else {
-  //       console.warn("[WS] reconnect disabled by stop flag.");
-  //     }
-  //   };
-  // }, [url, token]);
 
   // messages on template 가져오기
   const getMessage = (_step: any, symptom?: string, list?:string[]) => 
@@ -622,7 +548,7 @@ export function ChatInterface() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden"
+      className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden"
       >
       {/* 스크롤 영역 */}
       <div

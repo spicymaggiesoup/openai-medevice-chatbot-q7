@@ -1,9 +1,5 @@
-import { CHATROOM_LIST, CHATROOM_NEW } from "@/lib/proxy";
+import { DEPARTMENTS_BY_NAME } from "@/lib/proxy/medical/medical";
 
 export async function GET(req: Request) {
-  return CHATROOM_LIST(req);
-}
-
-export async function POST(req: Request) {
-  return CHATROOM_NEW(req);
+  return DEPARTMENTS_BY_NAME(req);
 }

@@ -1,4 +1,4 @@
-import { SEARCH_HOSPITAL_LOCATION } from "@/lib/proxy";
+import { SEARCH_HOSPITAL_LOCATION } from "@/lib/proxy/medical/medical";
 
 export async function GET(
     req: Request,

@@ -1,4 +1,4 @@
-import { MESSAGES, SEND_MESSAGE } from "@/lib/proxy";
+import { MESSAGES, SEND_MESSAGE } from "@/lib/proxy/chat/chat";
 
 export async function GET(
     req: Request,

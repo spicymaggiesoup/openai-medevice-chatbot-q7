@@ -28,12 +28,6 @@ const MapPinIcon = () => (
   </svg>
 )
 
-const NavigationIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polygon points="3,11 22,2 13,21 11,13 3,11" />
-  </svg>
-)
-
 interface Hospital {
   id: string
   name: string

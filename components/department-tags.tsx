@@ -1,139 +1,32 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 
-interface MedicalCondition {
+interface Departments {
   id: number
   name: string
-  description: string
+  //description: string
   created_at: string
 }
 
-interface MedicalTagButtonsProps {
-  onTagClick?: (condition: MedicalCondition) => void
+interface DepartmentsTagsButtonProps {
+  onTagClick?: (condition: Departments) => void
   className?: string
   variant?: "default" | "compact"
 }
 
-const medicalConditions: MedicalCondition[] = [
-  {
-    id: 1,
-    name: "간염",
-    description: "간염 관련 질환",
-    created_at: "2025-09-12T06:33:28.250147",
-  },
-  {
-    id: 2,
-    name: "골다공증",
-    description: "골다공증 관련 질환",
-    created_at: "2025-09-12T06:33:28.370831",
-  },
-  {
-    id: 3,
-    name: "치매",
-    description: "치매 관련 질환",
-    created_at: "2025-09-12T06:33:28.538272",
-  },
-  {
-    id: 4,
-    name: "퇴행성근골격계질환",
-    description: "퇴행성근골격계질환 관련 질환",
-    created_at: "2025-09-12T06:33:28.663379",
-  },
-  {
-    id: 5,
-    name: "당뇨병",
-    description: "당뇨병 관련 질환",
-    created_at: "2025-09-12T06:33:28.822494",
-  },
-  {
-    id: 6,
-    name: "동맥경화",
-    description: "동맥경화 관련 질환",
-    created_at: "2025-09-12T06:33:28.990549",
-  },
-  {
-    id: 7,
-    name: "신장병",
-    description: "신장병 관련 질환",
-    created_at: "2025-09-12T06:33:29.431972",
-  },
-  {
-    id: 8,
-    name: "요통",
-    description: "요통 관련 질환",
-    created_at: "2025-09-12T06:33:29.587734",
-  },
-  {
-    id: 9,
-    name: "류마티스 관절염",
-    description: "류마티스 관절염 관련 질환",
-    created_at: "2025-09-12T06:33:29.737353",
-  },
-  {
-    id: 10,
-    name: "위장병",
-    description: "위장병 관련 질환",
-    created_at: "2025-09-12T06:33:30.154580",
-  },
-  {
-    id: 11,
-    name: "노인성빈혈",
-    description: "노인성빈혈 관련 질환",
-    created_at: "2025-09-12T06:33:30.287770",
-  },
-  {
-    id: 12,
-    name: "노인성우울증",
-    description: "노인성우울증 관련 질환",
-    created_at: "2025-09-12T06:33:30.423284",
-  },
-  {
-    id: 13,
-    name: "뇌동맥류",
-    description: "뇌동맥류 관련 질환",
-    created_at: "2025-09-12T06:33:30.562624",
-  },
-  {
-    id: 14,
-    name: "변비",
-    description: "변비 관련 질환",
-    created_at: "2025-09-12T06:33:30.717905",
-  },
-  {
-    id: 15,
-    name: "고혈압",
-    description: "고혈압 관련 질환",
-    created_at: "2025-09-12T06:33:30.849700",
-  },
-  {
-    id: 16,
-    name: "뇌졸중",
-    description: "뇌졸중 관련 질환",
-    created_at: "2025-09-12T06:33:30.981119",
-  },
-  {
-    id: 17,
-    name: "파킨슨병",
-    description: "파킨슨병 관련 질환",
-    created_at: "2025-09-12T06:33:31.160507",
-  },
-  {
-    id: 18,
-    name: "오십견",
-    description: "오십견 관련 질환",
-    created_at: "2025-09-12T06:33:31.527418",
-  },
-]
+const medicalConditions: Departments[] = [];
 
-export function DepartmentTags({ onTagClick, className = "", variant = "default" }: MedicalTagButtonsProps) {
+export function DepartmentTags({ onTagClick, className = "", variant = "default" }: DepartmentsTagsButtonProps) {
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const handleTagClick = (condition: MedicalCondition) => {
+  const [departmentList, setDepartmentList] = useState<Departments[]>([]);
+
+  const handleTagClick = (condition: Departments) => {
     setSelectedTags((prev) =>
       prev.includes(condition.id) ? prev.filter((id) => id !== condition.id) : [...prev, condition.id],
     )
@@ -154,7 +47,7 @@ export function DepartmentTags({ onTagClick, className = "", variant = "default"
     </svg>
   );
 
-    const scrollLeft = () => {
+  const scrollLeft = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" })
     }
@@ -173,10 +66,37 @@ export function DepartmentTags({ onTagClick, className = "", variant = "default"
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
     }
   };
+  
+  useEffect(() => {
+    (async() => {
+      try {        
+        const getAllDepartments = await fetch("/api/medical/departments", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        
+        const departments = await getAllDepartments.json();
+
+        setDepartmentList(departments);
+
+        console.log('[department-interface] fetched departments :: ', departments);
+    
+      } catch (err) {
+        console.error("부서 정보 가져오기 실패");
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    console.log('[department-interface] useEffect departmentList :: ', departmentList);
+    
+    medicalConditions.concat(departmentList);
+  }, [departmentList]);
 
   return (
-    <div className={`bg-emerald-50`}>
-    {/* <div className={`w-full ${className}`}> */}
+    <div className={`department-tags bg-emerald-50`}>
       {!isCompact && (
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">진료과로 병원기기 찾기</h3>
@@ -200,11 +120,11 @@ export function DepartmentTags({ onTagClick, className = "", variant = "default"
         <div
           ref={scrollContainerRef}
           onScroll={updateScrollButtons}
-          // style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           className="h-[80px] pb-2 overflow-y-auto scrollbar-hide"
+          // style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           // className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
           >
-          {medicalConditions.map((condition) => (
+          {departmentList.map((condition) => (
             <Button
               key={condition.id}
               variant={selectedTags.includes(condition.id) ? "default" : "outline"}
@@ -215,13 +135,9 @@ export function DepartmentTags({ onTagClick, className = "", variant = "default"
                 cusrsor-pointer
                 ${
                   'bg-teal-500 hover:bg-teal-600 text-white'
-                  // selectedTags.includes(condition.id)
-                  //   ? "bg-teal-600 hover:bg-teal-700 text-white border-teal-600"
-                  //   : "text-gray-200 border-gray-600 hover:border-teal-500"
                 }
                 ${isCompact ? "text-xs px-2 py-1" : "text-sm px-3 py-2"}
               `}
-              title={condition.description}
             >
               {condition.name}
             </Button>
