@@ -58,14 +58,14 @@ export async function SEARCH_HOSPITALS(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search");
-    const departmentId = searchParams.get("department_id");
-    const diseaseId = searchParams.get("disease_id");
+    // const departmentId = searchParams.get("department_id");
+    // const diseaseId = searchParams.get("disease_id");
 
     console.log('search::: ', search);
 
-    if (!search || !departmentId || !diseaseId) {
-      return NextResponse.json({ ok: false, error: "Query string not set" }, { status: 500 }); 
-    }
+    // if (!search || !departmentId || !diseaseId) {
+    //   return NextResponse.json({ ok: false, error: "Query string not set" }, { status: 500 }); 
+    // }
 
     const r = await fetch(
       `${API_BASE}/api/medical/hospitals?search=${search}`,

@@ -3,11 +3,25 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 
+import { IconChevronLeft } from "@/components/icon/icon-chevron-left"
+import { IconChevronRight } from "@/components/icon/icon-chevron-right"
+
 interface Departments {
   id: number
   name: string
   //description: string
   created_at: string
+}
+
+interface Hospital {
+  id: string
+  name: string
+  address: string
+  phone: string
+  hospital_type_name: string
+  created_at: string
+  latitude: number
+  longitude: number
 }
 
 interface DepartmentsTagsButtonProps {
@@ -16,36 +30,59 @@ interface DepartmentsTagsButtonProps {
   variant?: "default" | "compact"
 }
 
-const medicalConditions: Departments[] = [];
+type Props = {
+  value?: number[];                     // 선택된 태그 (부모가 소유)
+  onChange: (next: Hospital[]) => void;  // 부모로 값 전달
+  isCompact?: boolean;
+};
 
-export function DepartmentTags({ onTagClick, className = "", variant = "default" }: DepartmentsTagsButtonProps) {
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+//export function DepartmentTags({ onTagClick, className = "", variant = "default" }: DepartmentsTagsButtonProps) {
+// export function DepartmentTags({ value, onChange, isCompact }: Props) {
+export function DepartmentTags({ onChange, isCompact }: Props) {
+  const [departmentList, setDepartmentList] = useState<Departments[]>([]);
+
+  const [selectedTag, setSelectedTag] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const [departmentList, setDepartmentList] = useState<Departments[]>([]);
-
-  const handleTagClick = (condition: Departments) => {
+  const handleTagClick = (_department:Departments) => {
     setSelectedTags((prev) =>
-      prev.includes(condition.id) ? prev.filter((id) => id !== condition.id) : [...prev, condition.id],
-    )
-    onTagClick?.(condition)
+      prev.includes(_department.name) ? prev.filter((_name) => _name !== _department.name) : [...prev, _department.name],
+    );
+    setSelectedTag(_department.name);
+
+    console.log('[department-tags] id :: ', _department.name);
+
+    //onTagClick?.(condition)
+    //const next = value.includes(_department.id) ? value.filter(x => x !== _department.id) : [...value, _department.id];
+    //console.log('[department-tags] next :: ', next);
+
+    (async() => {
+      try {
+        const params = new URLSearchParams({
+          search: `${_department.id}`,
+        });
+        const getHospitalsList = await fetch(`/api/medical/hospitals?${params.toString()}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        
+        const hospitalsList = await getHospitalsList.json();
+
+        console.log('[department-interface] fetched hospitalsList :: ', hospitalsList);
+
+        onChange(hospitalsList);
+    
+      } catch (err) {
+        console.error("부서 정보 가져오기 실패");
+      }
+    })();
   }
-
-  const isCompact = variant === "compact";
-
-  const ChevronLeftIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-
-  const ChevronRightIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -89,12 +126,6 @@ export function DepartmentTags({ onTagClick, className = "", variant = "default"
     })();
   }, []);
 
-  useEffect(() => {
-    console.log('[department-interface] useEffect departmentList :: ', departmentList);
-    
-    medicalConditions.concat(departmentList);
-  }, [departmentList]);
-
   return (
     <div className={`department-tags bg-emerald-50`}>
       {!isCompact && (
@@ -104,69 +135,139 @@ export function DepartmentTags({ onTagClick, className = "", variant = "default"
         </div>
       )}
 
-      <div>
-        {/* Left scroll button 
+      <div className="flex items-center gap-2 h-[50px]">
+        {/* Left button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={scrollLeft}
-          className={`top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-200 rounded-full w-8 h-8 p-0 transition-opacity ${
-            canScrollLeft ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`cursor-pointer bg-gray-800/80 hover:bg-gray-700 text-gray-200
+                      rounded-full w-8 h-8 p-0 transition-opacity
+                      ${canScrollLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          aria-label="왼쪽으로 스크롤"
         >
-          <ChevronLeftIcon />
-        </Button>*/}
-
+          <IconChevronLeft />
+        </Button>
         <div
           ref={scrollContainerRef}
           onScroll={updateScrollButtons}
-          className="h-[80px] pb-2 overflow-y-auto scrollbar-hide"
-          // style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          // className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
-          >
-          {departmentList.map((condition) => (
-            <Button
-              key={condition.id}
-              variant={selectedTags.includes(condition.id) ? "default" : "outline"}
-              size={isCompact ? "sm" : "default"}
-              onClick={() => handleTagClick(condition)}
-              className={`
-                transition-all duration-200 hover:scale-105
-                cusrsor-pointer
-                ${
-                  'bg-teal-500 hover:bg-teal-600 text-white'
-                }
-                ${isCompact ? "text-xs px-2 py-1" : "text-sm px-3 py-2"}
-              `}
-            >
-              {condition.name}
-            </Button>
-          ))}
+          className="flex-1 overflow-x-auto overflow-y-hidden no-scrollbar"
+        >
+          <div className="flex gap-2 w-max">
+            {departmentList.map((condition) => (
+              <Button
+                key={condition.id}
+                variant={selectedTags.includes(condition.name) ? "default" : "outline"}
+                size={isCompact ? "sm" : "default"}
+                onClick={() => handleTagClick(condition)}
+                className={`transition-all duration-200 hover:scale-105
+                            cursor-pointer
+                            bg-teal-500 hover:bg-teal-600 text-white
+                            ${isCompact ? "text-xs px-2 py-1" : "text-sm px-3 py-2"}`}
+              >
+                {condition.name}
+              </Button>
+            ))}
+          </div>
         </div>
-
-        {/* Right scroll button 
         <Button
           variant="ghost"
           size="sm"
           onClick={scrollRight}
-          className={`right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-200 rounded-full w-8 h-8 p-0 transition-opacity ${
-            canScrollRight ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`cursor-pointer bg-gray-800/80 hover:bg-gray-700 text-gray-200
+                      rounded-full w-8 h-8 p-0 transition-opacity
+                      ${canScrollRight ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          aria-label="오른쪽으로 스크롤"
         >
-          <ChevronRightIcon />
-        </Button>*/} 
+          <IconChevronRight />
+        </Button>
       </div>
 
-      {selectedTags.length > 0 && !isCompact && (
-        <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="text-sm text-gray-300">
-            검색 진료과: <span className="text-teal-400 font-medium">{selectedTags}</span>
-          </div>
-          <div className="text-sm text-gray-300">
-            검색 병원 수: <span className="text-teal-400 font-medium">{selectedTags.length}개</span>
-          </div>
+      <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="text-sm text-gray-300">
+          검색 진료과: <span className="text-teal-400 font-medium">{selectedTag}</span>
+          {/* 검색 진료과: <span className="text-teal-400 font-medium">{selectedTags.join(', ')}</span> */}
         </div>
-      )}
+        <div className="text-sm text-gray-300">
+          검색 병원 수: <span className="text-teal-400 font-medium">{selectedTags.length}개</span>
+        </div>
+      </div>
     </div>
   )
+  // return (
+  //   <div className={`department-tags bg-emerald-50`}>
+  //     {!isCompact && (
+  //       <div className="mb-4">
+  //         <h3 className="text-lg font-semibold mb-2">진료과로 병원기기 찾기</h3>
+  //         <p className="text-sm text-black-400">서초구에 위치한 병원의 기기현황을 진료과로 필터하여 찾아보세요.</p>
+  //       </div>
+  //     )}
+
+  //     <div>
+  //       {/* Left scroll button 
+  //       <Button
+  //         variant="ghost"
+  //         size="sm"
+  //         onClick={scrollLeft}
+  //         className={`top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-200 rounded-full w-8 h-8 p-0 transition-opacity ${
+  //           canScrollLeft ? "opacity-100" : "opacity-0 pointer-events-none"
+  //         }`}
+  //       >
+  //         <ChevronLeftIcon />
+  //       </Button>*/}
+
+  //       <div
+  //         ref={scrollContainerRef}
+  //         onScroll={updateScrollButtons}
+  //         className="h-[50px] pb-2 overflow-auto scrollbar-hide no-scrollbar"
+  //         // style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+  //         // className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+  //         >
+  //           <div className="flex">
+  //             {departmentList.map((condition) => (
+  //               <Button
+  //                 key={condition.id}
+  //                 variant={selectedTags.includes(condition.id) ? "default" : "outline"}
+  //                 size={isCompact ? "sm" : "default"}
+  //                 onClick={() => handleTagClick(condition)}
+  //                 className={`
+  //                   transition-all duration-200 hover:scale-105
+  //                   cusrsor-pointer
+  //                   ${
+  //                     'bg-teal-500 hover:bg-teal-600 text-white'
+  //                   }
+  //                   ${isCompact ? "text-xs px-2 py-1" : "text-sm px-3 py-2"}
+  //                 `}
+  //               >
+  //                 {condition.name}
+  //               </Button>
+  //             ))}
+  //           </div>
+  //       </div>
+
+  //       {/* Right scroll button 
+  //       <Button
+  //         variant="ghost"
+  //         size="sm"
+  //         onClick={scrollRight}
+  //         className={`right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-200 rounded-full w-8 h-8 p-0 transition-opacity ${
+  //           canScrollRight ? "opacity-100" : "opacity-0 pointer-events-none"
+  //         }`}
+  //       >
+  //         <ChevronRightIcon />
+  //       </Button>*/} 
+  //     </div>
+
+  //     {selectedTags.length > 0 && !isCompact && (
+  //       <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
+  //         <div className="text-sm text-gray-300">
+  //           검색 진료과: <span className="text-teal-400 font-medium">{selectedTags}</span>
+  //         </div>
+  //         <div className="text-sm text-gray-300">
+  //           검색 병원 수: <span className="text-teal-400 font-medium">{selectedTags.length}개</span>
+  //         </div>
+  //       </div>
+  //     )}
+  //   </div>
+  // )
 }
