@@ -52,9 +52,9 @@ export function HomeInterface() {
 
   // 사이드메뉴
   const sideMenu = [
-    { page: "1", name: "가야할 병원 문의", icon: Hospital, className: 'chat' },
-    { page: "2", name: "과거 문의내역 보기", icon: Clock, className: 'history' },
-    { page: "3", name: "병원 장비현황 보기", icon: Search, className: 'search' },
+    { page: "1", name: "가야할 병원 문의하기", icon: Hospital, className: 'chat' },
+    // { page: "2", name: "과거 문의내역 보기", icon: Clock, className: 'history' },
+    { page: "2", name: "병원 장비현황 보기", icon: Search, className: 'search' },
     //{ page: "4", name: "병원 기기찾기", icon: Search, className: 'search' },
   ];
 
