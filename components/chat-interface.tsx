@@ -193,7 +193,7 @@ export function ChatInterface() {
           <div className="flex-1 flex flex-col items-center justify-center bg-gray-900 text-white px-6 centered-input-container">
             <div className="w-full max-w-2xl">
               <div className="text-center mb-12">
-                <h1 className="text-4xl font-light mb-4">오늘의 어젠다는 무엇인가요?</h1>
+                <h1 className="text-4xl font-light mb-4">??????????</h1>
               </div>
 
               <form onSubmit={handleSendMessage} className="relative mb-8">
