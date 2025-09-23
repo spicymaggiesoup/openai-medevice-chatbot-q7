@@ -1,475 +1,159 @@
 "use client"
 
 import type React from "react"
-import type { MouseEvent } from "react"
-import { useState, useEffect, useRef, useCallback } from "react"
-
-import { redirect, useRouter } from "next/navigation";
-
-// import Hanspell  from "hanspell";
-
-import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
-
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MediBot } from "@/components/img/medi-bot"
+import { MediBotLogo } from "@/components/medi-bot-logo"
+import { MapContainer } from "@/components/map-container"
+import { UserAccountForm } from "@/components/user-account-form"
+import { ChatNavigation } from "@/components/chat-navigation"
+import MedicalTagButtons from "@/components/medical-tag-buttons"
+import { io, type Socket } from "socket.io-client"
 
-import { MapLayout } from "@/components/map-layout"
-import { chatInterfaceTemplate } from "@/lib/template"
-import { Send, LogOut, Home, Activity, Clock, Plus, Navigation, Phone } from "lucide-react"
+const SendIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m22 2-7 20-4-9-9-4Z" />
+    <path d="M22 2 11 13" />
+  </svg>
+)
 
-type WelcomTemlate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
-type EvaluatingTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; nextConnect: boolean;}[];
-type ScoreHighTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
-type ScoreLowTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
-type RecommendTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; buttons: string[]; buttonsCallback: any[]; }[];
-type HospitalsTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; location: string[]; }[];
-type AdiosTemplate = () => { id: string; content: string[]; sender: string; timestamp: Date; type: string; }[];
+const LogOutIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16,17 21,12 16,7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+)
 
-const INTERFACE_TEMPLATE: any /*{
-  welcome: WelcomTemlate;
-  evaluating: EvaluatingTemplate;
-  score_high: ScoreHighTemplate;
-  score_low: ScoreLowTemplate;
-  recommend: RecommendTemplate;
-  hospitals: HospitalsTemplate;
-  adios: AdiosTemplate;
-}*/ = chatInterfaceTemplate;
+const HomeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9,22 9,12 15,12 15,22" />
+  </svg>
+)
 
-const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
+const ActivityIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+  </svg>
+)
+
+const ClockIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12,6 12,12 16,14" />
+  </svg>
+)
+
+const PlusIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 12h14" />
+    <path d="M12 5v14" />
+  </svg>
+)
+
+const TablesIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h4m6 0h10" />
+  </svg>
+)
+
+interface Message {
+  id: string
+  content: string
+  sender: "user" | "bot"
+  timestamp: Date
+  type?: "text" | "symptom-check" | "advice"
+  symptoms?: string[]
+}
 
 export function ChatInterface() {
-  const typingRef = useRef(null);
-  const chatRef = useRef<HTMLDivElement | null>(null);   // ★ 추가
-
+  const [socket, setSocket] = useState<Socket | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [hasStartedConversation, setHasStartedConversation] = useState(false)
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
-  const [activeTyping, setActiveTyping] = useState(false)
+  const [activeTab, setActiveTab] = useState("Home")
+  const [isConnected, setIsConnected] = useState(false)
+  const [showAccountForm, setShowAccountForm] = useState(false)
+  const [showMap, setShowMap] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const [roomTitle, setRoomTitle] = useState<any>(null);
-  const [roomId, setRoomId] = useState(177);
-  const [finalDiseaseId, setfinalDiseaseIdRoomId] = useState(null);
+  useEffect(() => {
+    const socketInstance = io({
+      path: "/api/socket",
+    })
 
-  const [messageStep, setMessageStep] = useState(0);
-  const [userStep, setUserStep] = useState(0);
-  const [botStep, setBotStep] = useState(1);
+    socketInstance.on("connect", () => {
+      console.log("[v0] Connected to server")
+      setIsConnected(true)
+    })
 
-  const [evaluateScore, setEvaluateScore] = useState(95);  //모델지표의 평균값
-  const [incorrectMessageRate, setIncorrectMessageRate] = useState("");
+    socketInstance.on("disconnect", () => {
+      console.log("[v0] Disconnected from server")
+      setIsConnected(false)
+    })
 
-  const [userMessageContent, setUserMessageContent] = useState("");
-
-  const [diseaseName, setDiseaseName] = useState("");
-
-  const [buttonDisabled, setButtonDisabled] = useState(false);
-  
-  const [messages, setMessages] = useState<any[]>([
-    Object.assign(
-      ((_welcomes) => _welcomes[Math.floor(Math.random() * (_welcomes.length))])(INTERFACE_TEMPLATE.welcome()),
-      { timestamp: new Date() },
-    ),
-  ]);
-
-  const [showMap, setShowMap] = useState(false);
-
-  const router = useRouter();
-
-  // 소켓 연결
-  type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  type WsMsg = | { v: 1; id: string; method: Method; route: string; headers?: any; query?: any; body?: any; data?: any; event?: any };
-  const wsRef = useRef<WebSocket | null | undefined>(null);
-  const pendingRef = useRef<
-    Map<string, { resolve: (v: any) => void; reject: (e: any) => void; t: number }>
-  >(new Map());
-  const queueRef = useRef<WsMsg[]>([]);
-  const listenersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
-  const reconnectDelayRef = useRef(10000);
-  const stopReconnectRef = useRef(false);
-
-  // 토큰
-  const token = useChatToken((s) => s.chatToken);
-
-
-  // messages on template 가져오기
-  const getMessage = (_step: any, symptom?: string, list?:string[]) => 
-    ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step](symptom, list));
-
-  const showBotMessage = async(_userMessage: any) => {
-
-    const botMessage: any = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      content: [],
-      sender: "bot",
-    };
-
-    // 오타율이 너무 높으면 다시 써달라고 하기 (low-eval)
-    if (Number(incorrectMessageRate) >= 50) {
-      Object.assign(botMessage, {
-        id: Date.now().toString(),
-        timestamp: new Date(),
-        content: getMessage("low_eval"),
-        sender: "bot"
-      });
-    }
-
-    // 다음에 보일 메시지 체크
-    let _step = MESSAGE_SCENARIO[messageStep];
-
-    // 평가결과..
-    if (_step instanceof Array) {
-      _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
-    }
-
-    Object.assign(botMessage, getMessage(_step), {
-        id: Date.now().toString(),
-        timestamp: new Date(),
-    });
-
-    setMessages((prev) => [...prev, botMessage]);
-    chatRef.current?.scrollIntoView({ behavior: "smooth" });
-
-    const diagnoseSymptom = async () => {
-      if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-        let content: any;
-        const [diseaseName, score, messageContent]: any = await sendSymptomMessage(_userMessage);
-
-        console.log("[chat-interface] Result sysmptom :: ", messageContent);
-
-        if (!score) {
-          console.log('[chart-interface] score가 너무 낮아서, 질병판별 불가.');
-          content = [messageContent];
-        } else {
-          console.log('[chart-interface] 질병을 판별 함.');
-          content = messageContent.split('\n');
-        }
-
-        setMessages((prev) => [...prev, {
-          id: Date.now().toString(),
-          timestamp: new Date(),
-          content, //[messageContent],
-          sender: "bot",
-        }]);
-
-        if (score) {
-          setTimeout(() => {
-            setMessages((prev) => [...prev, Object.assign({
-              id: Date.now().toString(),
-              timestamp: new Date(),
-              content: [],
-              sender: "bot",
-            }, getMessage('recommend', diseaseName))]);
-          }, 1500);
-        } else {
-          // evaluate 다시
-          setMessageStep(1);
-        }
-      }
-
+    socketInstance.on("receive_message", (message: Message) => {
+      console.log("[v0] Message received:", message)
+      setMessages((prev) => [...prev, message])
       setIsTyping(false)
-      setActiveTyping(false)
-    };
+    })
 
-    setTimeout(diagnoseSymptom, 1500);
-   
-  };
+    setSocket(socketInstance)
 
-  // 위치기반 병원추천
-  const recommendHospitals = async() => {
-    try {
-      // 메시지 전송
-      const recommendHospitalsByDisease = await fetch(`/api/medical/recommend-by-disease`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          "max_distance": 100,
-          "limit": 10,
-          "disease_name": diseaseName,
-          "chat_room_id": roomId,
-        }),
-      });
-
-      const recommendResult = await recommendHospitalsByDisease.json();
-
-      console.log("[chat-interface] recommendHospitals : ", recommendResult);
-
-      // 진료과로 병원검색
-      // const searchHospitalsByDiseaseId = await fetch(`/api/medical/hospitals`, {
-      //   method: "GET",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     "Authorization": `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify({
-      //     "disease_id": disease_id,
-      //   }),
-      // });
-
-      // const searchedResult = await searchHospitalsByDiseaseId.json();
-
-      // console.log("[chat-interface] recommendHospitals : ", searchedResult);
-
-      //return user_message.content;
-
-      return recommendResult.recommendations;
-
-    } catch(e) {
-      console.error(e);
+    return () => {
+      socketInstance.disconnect()
     }
-  };
+  }, [])
 
-  // fetch message
-  const sendUserMessage = async(_message: any) => {
-    const _roomId = roomId;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
-    if (_roomId) {
-      try {
-        // 메시지 전송
-        const sendChatMessage = await fetch(`/api/chat/rooms/${_roomId}/messages`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({ content: _message }),
-        });
-
-        const chatRooms = await sendChatMessage.json();
-
-        const { bot_response, message} = chatRooms;
-
-        console.log("[chat-interface] Send message :bot_message: ", bot_response);
-        console.log("[chat-interface] Send message :user_message: ", message);
-
-        // {id: 3, message_type: 'USER', content: '허리가 아파요.', created_at: '2025-09-11T14:24:19.250527'}
-        return message.content;
-
-      } catch(e) {
-        console.error(e);
-      }
-    }
-  };
-
-  const sendSymptomMessage = async(_message: any) => {
-    const _roomId = roomId;
-
-    if (_roomId) {
-
-      let resultDisease = "";
-
-      try {
-        // 증상 분석
-        const sendSymptom = await fetch(`/api/ml/analyze-symptom`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            chat_room_id: roomId,
-            text: _message,
-          }),
-        });
-
-        const resultDiseases = await sendSymptom.json();
-        
-        // 질병예측 결과
-        const {
-          chat_room_id,
-          processed_text,
-          disease_classifications,
-          top_disease,
-          confidence,
-          formatted_message,
-        } = resultDiseases;
-
-
-        console.log("[chat-interface] Send symptoms: top_disease", top_disease);
-        console.log("[chat-interface] Send symptoms: confidence", confidence);
-        console.log("[chat-interface] Send symptoms: formatted_message", formatted_message);
-
-        // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
-
-        if (top_disease) {
-          if (confidence >= 0.8) {
-            setDiseaseName(top_disease);
-
-            return [top_disease, confidence, formatted_message];
-          }
-        }
-        return ['', 0, getMessage('score_low')['content'].join('')];
-
-      } catch(e) {
-        console.error(e);
-      }
-    }
-  };
-
-  // chatbox 메시지 전송
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!inputMessage.trim() || !socket) return
 
-    // 입력여부 확인
-    if (!inputMessage.trim()) return;
-
-    console.log('[chart-interface] inputMessage :: ', inputMessage);
-
-    const userMessage: any = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      content: [],
-      sender: "user",
-    };
-
-    // 증상설명...
-    if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-      const _inputMessage = await sendUserMessage(inputMessage);
-
-      setUserMessageContent(_inputMessage);
-
-      Object.assign(userMessage, {
-        content: [_inputMessage]
-      });
-
-      console.log('[chart-interface] USER STEP1  :: ', _inputMessage);
-
-      //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
-      setUserStep(userStep + 1);
-      setMessageStep(messageStep + 1);
-      setMessages((prev) => [...prev, userMessage]);
-      setInputMessage("");
-      setIsTyping(false);
-      setActiveTyping(false);
-
-      // Simulate bot response
-      // setTimeout(() => {
-      // 챗룸 연결
-      
-
-      showBotMessage(_inputMessage);
-      // }, 1500);
+    if (!hasStartedConversation) {
+      setHasStartedConversation(true)
     }
 
-    // 오타율 검사(말이되는 말(한글)인지)
-    //incorrectSpellCheck(inputMessage);
-  }
-
-  // chatbox 메시지 전송 - chatbox 버튼 클릭
-  const handleButtonClick = async(_message: string) => {
-    // 사용자 답변 (클릭한 버튼 내용)
-    setMessages((prev) => [...prev, {
-      id: Date.now().toString(),
-      content: [_message],
+    const messageData = {
+      content: inputMessage,
       sender: "user",
-      timestamp: new Date(),
-    }]);
+      type: "text",
+    }
+
+    socket.emit("send_message", messageData)
     setInputMessage("")
     setIsTyping(true)
-    setActiveTyping(true)
-
-    const botMessage: any = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      content: [],
-      sender: "bot",
-    };
-
-    //
-    if (_message.includes('네')) {
-      const recommendedHospitals = await recommendHospitals();
-
-      console.log('[chat-interface] 네 버튼으로 추천받은 병원리스트: ', recommendedHospitals);
-
-      setActiveTyping(false);
-      setInputMessage("");
-      setIsTyping(false);
-      
-      Object.assign(botMessage, getMessage("hospitals", diseaseName, recommendedHospitals));
-    
-    // 종료
-    } else if (_message.includes('아니요')) {
-      setActiveTyping(false);
-      
-      Object.assign(botMessage, Object.assign({
-        id: Date.now().toString(),
-        timestamp: new Date(),
-      }, getMessage("adios")));
-
-      setIsTyping(false);
-      setActiveTyping(false);
-
-    // 다른걸 입력했다 ?
-    } else {
-      Object.assign(botMessage, {
-        content: ['버튼을 선택해주세요! 🙌']
-      });
-    }
-
-    setMessages((prev) => [...prev, botMessage]);
   }
 
-  // chatbox Map 메시지 전송
-  const handleMapMessage = async (e: any) => {
-    e.preventDefault()
+  const handleSymptomClick = (symptom: string) => {
+    if (!socket) return
 
-    const hospitalInfo = e.currentTarget.name;
-    const [hospitalName, hospitalAddress, hospitalPhone] = hospitalInfo.split('^');
+    const messageData = {
+      content: symptom,
+      sender: "user",
+      type: "text",
+    }
 
-    console.log('hospitalName : ', hospitalName, ', hospitalAddress : ', hospitalAddress, ', hospitalPhone: ', hospitalPhone);
+    socket.emit("send_message", messageData)
+    setIsTyping(true)
+  }
 
-    const getHospitalId = await fetch(`/api/medical/hospitals?search=${encodeURIComponent(hospitalName)}&department_id=${null}&disease_id=${null}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const hospitalInfoResult = await getHospitalId.json();
-    const hospitalId = hospitalInfoResult[0].id;
-
-    console.log('hospitalId id:: ', hospitalId);
-
-    const hospitalLocation = await fetch(`/api/medical/hospitals/${hospitalId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    const hospitalLocationResult = await hospitalLocation.json();
-
-    console.log('hospitalLocationResult:: ', hospitalLocationResult);
-
-    //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
-    setUserStep(userStep + 1);
-    setMessageStep(messageStep + 1);
-    setMessages((prev) => [...prev, {
-      id: Date.now().toString(),
-      content: [`🏣 ${hospitalName} (${hospitalPhone})`, ` ${hospitalAddress}`],
-      sender: "bot",
-      type: "map",
-      timestamp: new Date(),
-      hospitalName,
-      hospitalAddress,
-      hospitalPhone,
-      latitude: hospitalLocationResult.latitude,
-      longitude: hospitalLocationResult.longitude,
-    }]);
-    setInputMessage("");
-    setIsTyping(false);
-    setActiveTyping(false);
+  const handleLogout = () => {
+    window.location.href = "/"
   }
 
   const handleLocationRequest = () => {
     setShowMap(true)
-    const locationMessage: any = {
+    const locationMessage: Message = {
       id: Date.now().toString(),
       content:
-        [""],
+        "I've found some nearby healthcare facilities for you. You can view them on the map below and get directions to any of them.",
       sender: "bot",
       timestamp: new Date(),
       type: "text",
@@ -477,184 +161,214 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, locationMessage])
   }
 
-  const handleCreateNewChatRoom = async() => {
-    const rooms = `Room_${Math.floor(Math.random() * 900 + 100)}`;
-
-    console.log("[chat-interface] createChatRoom Title: ", rooms);
-
-    if (roomTitle) {
-      return false;
-    }
-
-    const createChatRooms = await fetch("/api/chat/rooms", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({ title: rooms }),
-    });
-    
-    if (!createChatRooms.ok) {
-      const text = await createChatRooms.text();
-      console.error("[chat-interface] create room failed:", createChatRooms.status, text);
-      throw new Error(text || `HTTP ${createChatRooms.status}`);
-    }
-    
-    const {
-      title,
-      id,
-      final_disease_id,
-    } = await createChatRooms.json();
-
-    console.log("[chat-interface] New chatroom - ", `title: ${title}, id: ${id}, final_disease_id: ${final_disease_id}`);
-
-    // 채팅룸 정보저장
-    useChatRoom.getState().setTitle(`${title}`);
-    useChatRoom.getState().setId(id);
-    useChatRoom.getState().setFinalDiseaseId(final_disease_id);
-
-    setRoomTitle(title);
-    setRoomId(id);
-    setfinalDiseaseIdRoomId(final_disease_id);
-
-    return true;
+  const handleAccountRedirect = () => {
+    setShowAccountForm(true)
   }
 
-  // useEffect(() => {
-  //   connect();
+  const handleMedicalTagClick = (condition: { id: number; name: string; description: string }) => {
+    if (!socket) return
 
-  //   return () => {
-  //     wsRef.current?.close();
-  //     wsRef.current = undefined;
-  //   };
-  // }, [connect]);
-
-  // 로그인 chatrooms 조회 & 생성
-  useEffect(() => {
-     // 토큰 확인
-    let cancelled = false;
-    if (!token) {
-      router.replace("/");
+    const messageData = {
+      content: `${condition.name}에 대해 자세히 알려주세요`,
+      sender: "user",
+      type: "text",
     }
 
-    // 메시지 스텝 +1 (welcome 다음)
-    setMessageStep(messageStep + 1);
+    if (!hasStartedConversation) {
+      setHasStartedConversation(true)
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    socket.emit("send_message", messageData)
+    setIsTyping(true)
+  }
 
   return (
-    <div
-      className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden"
-      >
-      {/* 스크롤 영역 */}
-      <div
-        ref={chatRef}
-        className="flex-1 min-h-0 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-md ${message.sender === "user" ? "" : "w-full max-w-2xl"}`}>
-                {message.sender === "bot" && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                      <div className="w-8 h-8 text-white-600">
-                        <MediBot />
+    <div className="flex w-full h-screen">
+      {hasStartedConversation && (
+        <ChatNavigation isConnected={isConnected} activeTab={activeTab} setActiveTab={setActiveTab} />
+      )}
+
+      <div className="flex-1 flex flex-col">
+        {!hasStartedConversation ? (
+          <div className="flex-1 flex flex-col items-center justify-center bg-gray-900 text-white px-6 centered-input-container">
+            <div className="w-full max-w-2xl">
+              <div className="text-center mb-12">
+                <h1 className="text-4xl font-light mb-4">오늘의 어젠다는 무엇인가요?</h1>
+              </div>
+
+              <form onSubmit={handleSendMessage} className="relative mb-8">
+                <div className="relative flex items-center bg-gray-800 rounded-full border border-gray-700 focus-within:border-gray-600 transition-all duration-300">
+                  <button
+                    type="button"
+                    className="absolute left-4 p-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <PlusIcon />
+                  </button>
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="메시지를 입력하세요..."
+                    className="flex-1 bg-transparent border-none text-white placeholder-gray-400 pl-16 pr-20 py-4 text-lg focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+                  />
+                  <div className="absolute right-4 flex items-center gap-2">
+                    <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
+                      </svg>
+                    </button>
+                    <Button
+                      type="submit"
+                      disabled={!inputMessage.trim()}
+                      className="bg-white text-gray-900 hover:bg-gray-100 rounded-full p-2 w-10 h-10 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M7 17L17 7" />
+                        <path d="M7 7h10v10" />
+                      </svg>
+                    </Button>
+                  </div>
+                </div>
+              </form>
+
+              <div className="w-full">
+                <MedicalTagButtons onTagClick={handleMedicalTagClick} variant="compact" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 chat-messages-container">
+              <div className="max-w-4xl mx-auto space-y-6">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div className={`max-w-md ${message.sender === "user" ? "" : "w-full max-w-2xl"}`}>
+                      {message.sender === "bot" && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 text-teal-600">
+                              <MediBotLogo />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {message.sender === "user" ? (
+                        <div className="bg-teal-500 text-white p-4 rounded-2xl ml-auto">
+                          <p className="leading-relaxed text-white">{message.content}</p>
+                        </div>
+                      ) : (
+                        <div className="bg-white text-gray-800 shadow-sm p-4 rounded-2xl">
+                          <p className="leading-relaxed text-gray-800">{message.content}</p>
+                          {message.type === "symptom-check" && message.symptoms && (
+                            <div className="flex flex-wrap gap-2 mt-4">
+                              {message.symptoms.map((symptom) => (
+                                <Button
+                                  key={symptom}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSymptomClick(symptom)}
+                                  className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                                >
+                                  {symptom}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {showMap && (
+                  <div className="w-full">
+                    <MapContainer
+                      userLocation={{ lat: 40.7128, lng: -74.006 }}
+                      onLocationSelect={(facility) => {
+                        const facilityMessage: Message = {
+                          id: Date.now().toString(),
+                          content: `You selected ${facility.name}. Would you like me to help you prepare for your visit or provide more information about this facility?`,
+                          sender: "bot",
+                          timestamp: new Date(),
+                          type: "text",
+                        }
+                        setMessages((prev) => [...prev, facilityMessage])
+                      }}
+                    />
+                  </div>
+                )}
+
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                        <div className="w-5 h-5 text-teal-600">
+                          <MediBotLogo />
+                        </div>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl shadow-sm">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-teal-300 rounded-full animate-bounce" />
+                          <div
+                            className="w-2 h-2 bg-teal-300 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-teal-300 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
-
-                <div className={`p-4 rounded-2xl ${message.sender === "user" ? "bg-teal-600 text-white ml-auto" : "bg-white text-gray-800 shadow-sm"}`}>
-                  {message.content.map((_message: string, order: any) => (
-                    <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
-                  ))}
-
-                  {message.type === "button-check" && message.buttons && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {message.buttons.map((_button: any) => (
-                        <Button
-                          key={_button}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleButtonClick(_button)}
-                          className="cursor-pointer not-first:bg-gray-50 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white"
-                        >
-                          {_button}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-
-                  {message.type === "mapList" && (
-                    <div className="flex flex-wrap gap-2 mt-4 ">
-                      {message.location.map((_locationItem: any) => (
-                        <div
-                          key={_locationItem.id ?? `${_locationItem.name}-${_locationItem.phone ?? ''}`}
-                          className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${'bg-blue-50 border-blue-200'}`}
-                        >
-                          {/* ... mapList item ... */}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {message.type === "map" && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <MapLayout hospitalName={message.hospitalName} latitude={message.latitude} longitude={message.longitude} />
-                    </div>
-                  )}
-                </div>
+                <div ref={messagesEndRef} />
               </div>
             </div>
-          ))}
 
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 text-blue-600">
-                    <MediBot />
-                  </div>
-                </div>
-                <div className="bg-white p-4 rounded-2xl shadow-sm">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full animate-bounce bg-blue-300" />
-                    <div className="w-2 h-2 rounded-full animate-bounce bg-red-300" style={{ animationDelay: "0.1s" }} />
-                    <div className="w-2 h-2 rounded-full animate-bounce bg-green-300" style={{ animationDelay: "0.2s" }} />
-                  </div>
-                </div>
+            <div className="bg-white border-t border-gray-200 p-4 chat-input-container">
+              <div className="max-w-4xl mx-auto">
+                <form onSubmit={handleSendMessage} className="flex gap-3">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-teal-400 rounded-xl focus-visible:outline-none focus-visible:ring-0"
+                    disabled={isTyping || !isConnected}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!inputMessage.trim() || isTyping || !isConnected}
+                    className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl px-6"
+                  >
+                    <SendIcon />
+                  </Button>
+                </form>
               </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
-      {/* 입력 영역 (Footer) */}
-      <div className="shrink-0 bg-white border-t border-gray-200 p-4">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex gap-3">
-            <Input
-              ref={typingRef}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="MeDeviSe에게 문의하세요."
-              className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
-              disabled={activeTyping}
-            />
-            <Button
-              type="submit"
-              disabled={!inputMessage.trim() || isTyping}
-              className="bg-teal-500 hover:bg-emerald-600 text-white rounded-xl px-6"
+      {showAccountForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="relative">
+            <UserAccountForm />
+            <button
+              onClick={() => setShowAccountForm(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
             >
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
+              ×
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
-  );
+  )
 }
