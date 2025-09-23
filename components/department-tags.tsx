@@ -41,6 +41,7 @@ type Props = {
 export function DepartmentTags({ onChange, isCompact }: Props) {
   const [departmentList, setDepartmentList] = useState<Departments[]>([]);
 
+  const [countHospitals, setCountHospitals] = useState(0);
   const [selectedTag, setSelectedTag] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
@@ -76,6 +77,7 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
 
         console.log('[department-interface] fetched hospitalsList :: ', hospitalsList);
 
+        setCountHospitals(hospitalsList.length);
         onChange(hospitalsList);
     
       } catch (err) {
@@ -189,7 +191,7 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
           {/* 검색 진료과: <span className="text-teal-400 font-medium">{selectedTags.join(', ')}</span> */}
         </div>
         <div className="text-sm text-gray-300">
-          검색 병원 수: <span className="text-teal-400 font-medium">{selectedTags.length}개</span>
+          검색 병원 수: <span className="text-teal-400 font-medium">{countHospitals}개</span>
         </div>
       </div>
     </div>
