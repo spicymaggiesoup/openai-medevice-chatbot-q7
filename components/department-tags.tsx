@@ -36,8 +36,6 @@ type Props = {
   isCompact?: boolean;
 };
 
-//export function DepartmentTags({ onTagClick, className = "", variant = "default" }: DepartmentsTagsButtonProps) {
-// export function DepartmentTags({ value, onChange, isCompact }: Props) {
 export function DepartmentTags({ onChange, isCompact }: Props) {
   const [departmentList, setDepartmentList] = useState<Departments[]>([]);
 
@@ -55,16 +53,10 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
     );
     setSelectedTag(_department.name);
 
-    console.log('[department-tags] id :: ', _department.name);
-
-    //onTagClick?.(condition)
-    //const next = value.includes(_department.id) ? value.filter(x => x !== _department.id) : [...value, _department.id];
-    //console.log('[department-tags] next :: ', next);
-
     (async() => {
       try {
         const params = new URLSearchParams({
-          search: `${_department.id}`,
+          department_id: `${_department.id}`,
         });
         const getHospitalsList = await fetch(`/api/medical/hospitals?${params.toString()}`, {
           method: "GET",
@@ -193,83 +185,10 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
         <div className="text-sm text-gray-300">
           검색 병원 수: <span className="text-teal-400 font-medium">{countHospitals}개</span>
         </div>
+        {/* <div className="text-sm text-gray-300">
+          현황 업데이트 일자 <span className="text-teal-400 font-medium">{countHospitals}</span>
+        </div> */}
       </div>
     </div>
   )
-  // return (
-  //   <div className={`department-tags bg-emerald-50`}>
-  //     {!isCompact && (
-  //       <div className="mb-4">
-  //         <h3 className="text-lg font-semibold mb-2">진료과로 병원기기 찾기</h3>
-  //         <p className="text-sm text-black-400">서초구에 위치한 병원의 기기현황을 진료과로 필터하여 찾아보세요.</p>
-  //       </div>
-  //     )}
-
-  //     <div>
-  //       {/* Left scroll button 
-  //       <Button
-  //         variant="ghost"
-  //         size="sm"
-  //         onClick={scrollLeft}
-  //         className={`top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-200 rounded-full w-8 h-8 p-0 transition-opacity ${
-  //           canScrollLeft ? "opacity-100" : "opacity-0 pointer-events-none"
-  //         }`}
-  //       >
-  //         <ChevronLeftIcon />
-  //       </Button>*/}
-
-  //       <div
-  //         ref={scrollContainerRef}
-  //         onScroll={updateScrollButtons}
-  //         className="h-[50px] pb-2 overflow-auto scrollbar-hide no-scrollbar"
-  //         // style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-  //         // className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
-  //         >
-  //           <div className="flex">
-  //             {departmentList.map((condition) => (
-  //               <Button
-  //                 key={condition.id}
-  //                 variant={selectedTags.includes(condition.id) ? "default" : "outline"}
-  //                 size={isCompact ? "sm" : "default"}
-  //                 onClick={() => handleTagClick(condition)}
-  //                 className={`
-  //                   transition-all duration-200 hover:scale-105
-  //                   cusrsor-pointer
-  //                   ${
-  //                     'bg-teal-500 hover:bg-teal-600 text-white'
-  //                   }
-  //                   ${isCompact ? "text-xs px-2 py-1" : "text-sm px-3 py-2"}
-  //                 `}
-  //               >
-  //                 {condition.name}
-  //               </Button>
-  //             ))}
-  //           </div>
-  //       </div>
-
-  //       {/* Right scroll button 
-  //       <Button
-  //         variant="ghost"
-  //         size="sm"
-  //         onClick={scrollRight}
-  //         className={`right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-200 rounded-full w-8 h-8 p-0 transition-opacity ${
-  //           canScrollRight ? "opacity-100" : "opacity-0 pointer-events-none"
-  //         }`}
-  //       >
-  //         <ChevronRightIcon />
-  //       </Button>*/} 
-  //     </div>
-
-  //     {selectedTags.length > 0 && !isCompact && (
-  //       <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
-  //         <div className="text-sm text-gray-300">
-  //           검색 진료과: <span className="text-teal-400 font-medium">{selectedTags}</span>
-  //         </div>
-  //         <div className="text-sm text-gray-300">
-  //           검색 병원 수: <span className="text-teal-400 font-medium">{selectedTags.length}개</span>
-  //         </div>
-  //       </div>
-  //     )}
-  //   </div>
-  // )
 }

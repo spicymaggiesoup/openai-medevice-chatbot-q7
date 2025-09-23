@@ -58,26 +58,20 @@ export async function SEARCH_HOSPITALS(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search");
-    // const departmentId = searchParams.get("department_id");
-    // const diseaseId = searchParams.get("disease_id");
+    const departmentId = searchParams.get("department_id");
+    const diseaseId = searchParams.get("disease_id");
 
-    console.log('search::: ', search);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (departmentId) params.set("department_id", departmentId);
+    if (diseaseId) params.set("disease_id", diseaseId);
 
-    // if (!search || !departmentId || !diseaseId) {
-    //   return NextResponse.json({ ok: false, error: "Query string not set" }, { status: 500 }); 
-    // }
+    const query = params.toString();
+    const targetUrl = query
+      ? `${API_BASE}/api/medical/hospitals?${query}`
+      : `${API_BASE}/api/medical/hospitals`;
 
-    const r = await fetch(
-      `${API_BASE}/api/medical/hospitals?search=${search}`,
-      // `${API_BASE}/api/medical/hospitals${
-      //   disease_id ? `?disease_id=${disease_id}` : ''
-      // }
-      // ${
-      //   department_id ? `&department_id=${department_id}` : ''
-      // }${
-      //   disease_id ? `&disease_id=${disease_id}` : ''
-      // }`,
-      {
+    const r = await fetch(targetUrl, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
