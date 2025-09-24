@@ -4,6 +4,8 @@ import { useState, useEffect, Fragment } from "react"
 import { DepartmentTags } from "@/components/department-tags"
 import { MapPinIcon } from "@/components/icon/icon-map-pin"
 import { PhoneIcon } from "@/components/icon/icon-phone"
+import { IconChevronUp } from "@/components/icon/icon-chevron-up"
+import { IconChevronDown } from "@/components/icon/icon-chevron-down"
 
 interface Hospital {
   id: string
@@ -126,7 +128,8 @@ export function SearchHospitalsInterface() {
                           className="cursor-pointer flex items-center justify-center"
                         >
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {isOpen ? "닫기" : "보기"}
+                            {isOpen ? '닫기' : '보기'}
+                            {/* {isOpen ? (<IconChevronUp />) : (<IconChevronDown />)} */}
                           </span>
                         </div>
                       </td>

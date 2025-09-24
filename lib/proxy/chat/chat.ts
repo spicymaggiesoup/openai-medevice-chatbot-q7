@@ -164,3 +164,48 @@ export async function SEND_MESSAGE(req: Request, roomId: number) {
     return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
   }
 }
+
+// 메시지 삭제
+export async function DELETE_MESSAGE(req: Request, roomId: number) {
+  if (!roomId) {
+    return NextResponse.json({ ok: false, error: "roomId missing" }, { status: 400 });
+  }
+
+  try {
+    const origin = req.headers.get("origin") || "";
+    if (!API_BASE) {
+      return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+    }
+    if (origin && API_BASE.startsWith(origin)) {
+      return NextResponse.json(
+        { ok: false, error: "API_BASE misconfigured (points to this app)" },
+        { status: 500 }
+      );
+    }
+
+    const auth = req.headers.get("authorization");
+    const contentType = req.headers.get("content-type") || "application/json";
+    const body = await req.text();
+
+    const upstreamUrl = new URL(`/api/chat/rooms/${roomId}/messages`, API_BASE).toString();
+
+    const r = await fetch(upstreamUrl, {
+      method: "DELETE",
+      headers: {
+        ...(auth ? { authorization: auth } : {}),
+        "content-type": contentType,
+        accept: "application/json",
+      },
+      body,
+      cache: "no-store",
+    });
+
+    return new NextResponse(r.body, {
+      status: r.status,
+      headers: { "content-type": r.headers.get("content-type") ?? "application/json" },
+    });
+  } catch (err) {
+    console.error(`Proxy DELETE /api/chat/rooms/${roomId}/messages error:`, err);
+    return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
+  }
+}
