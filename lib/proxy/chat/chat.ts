@@ -185,18 +185,15 @@ export async function DELETE_MESSAGE(req: Request, roomId: number) {
 
     const auth = req.headers.get("authorization");
     const contentType = req.headers.get("content-type") || "application/json";
-    const body = await req.text();
 
-    const upstreamUrl = new URL(`/api/chat/rooms/${roomId}/messages`, API_BASE).toString();
+    const upstreamUrl = new URL(`/api/chat/rooms/${roomId}`, API_BASE).toString();
 
     const r = await fetch(upstreamUrl, {
       method: "DELETE",
       headers: {
         ...(auth ? { authorization: auth } : {}),
-        "content-type": contentType,
         accept: "application/json",
       },
-      body,
       cache: "no-store",
     });
 
@@ -205,7 +202,7 @@ export async function DELETE_MESSAGE(req: Request, roomId: number) {
       headers: { "content-type": r.headers.get("content-type") ?? "application/json" },
     });
   } catch (err) {
-    console.error(`Proxy DELETE /api/chat/rooms/${roomId}/messages error:`, err);
+    console.error(`Proxy DELETE /api/chat/rooms/${roomId} error:`, err);
     return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
   }
 }

@@ -179,11 +179,11 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
 
       <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
         <div className="text-sm text-gray-300">
-          검색 진료과: <span className="text-teal-400 font-medium">{selectedTag}</span>
+          선택 진료과: <span className="text-teal-400 font-medium">{selectedTag || '선택없음'}</span>
           {/* 검색 진료과: <span className="text-teal-400 font-medium">{selectedTags.join(', ')}</span> */}
         </div>
         <div className="text-sm text-gray-300">
-          검색 병원 수: <span className="text-teal-400 font-medium">{countHospitals}개</span>
+          조회된 병원 수: <span className="text-teal-400 font-medium">{countHospitals}개</span>
         </div>
         {/* <div className="text-sm text-gray-300">
           현황 업데이트 일자 <span className="text-teal-400 font-medium">{countHospitals}</span>
