@@ -177,7 +177,14 @@ export function HomeInterface() {
         <aside
           className={`bg-white border-r border-gray-200 overflow-hidden
                       transition-[width] duration-500 ease-in-out
-                      ${isClosed ? `w-0 opacity-0` : `w-80 opacity-100${handleInnerSize() ? ' h-full absolute left-0 top-0' : ''}`}`}
+                      ${isClosed
+                        ? `w-0 opacity-0`
+                        : `w-80 opacity-100${
+                            handleInnerSize()
+                              ? ' h-full absolute left-0 top-0 z-40 shadow-lg'
+                              : ''
+                          }`
+                      }`}
           aria-hidden={isClosed}
         >
           {/* Sidebar Header + Nav */}

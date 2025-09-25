@@ -11,10 +11,10 @@ import { redirect, useRouter } from "next/navigation";
 
 import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
 
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input" 
-import { Confirm } from "@/components/ui/confirm" 
+import { Confirm } from "@/components/ui/confirm"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { IconBackward } from "@/components/icon/icon-backward"
 import { IconTrash2 } from "@/components/icon/icon-trash"
 import { MediBot } from "@/components/img/medi-bot"
@@ -67,7 +67,11 @@ export function ChatInterface() {
 
   const [hasStartedConversation, setHasStartedConversation] = useState(false);
 
+  // 상단 state들 옆에 추가
+  const [mounted, setMounted] = useState(false);
+
   const [showDeleteMessage, setShowDeleteMessage] = useState(false);
+  const [openDeleteId, setOpenDeleteId] = useState<string | number | null>(null);
   const [targetChat, setTargetChat] = useState<any | null>(null);
 
   const [isTyping, setIsTyping] = useState(false);
@@ -116,6 +120,27 @@ export function ChatInterface() {
       //return user_message.content;
 
       return recommendResult.recommendations;
+
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  const deleteChatRoom = async() => {
+    try {
+      const deleteUserSelectedChatRoom = await fetch(`/api/chat/rooms/${openDeleteId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const deleteChatRoom = await deleteUserSelectedChatRoom.json();
+
+      console.log("[chat-interface] deleteChatRoom : ", deleteChatRoom);
+
+      return deleteChatRoom;
 
     } catch(e) {
       console.error(e);
@@ -180,18 +205,7 @@ export function ChatInterface() {
 
     setTargetChat(_chat);
     setShowDeleteMessage(true);
-    /*
-    const deleteUserSelectedChatRoom = await fetch(`/api/chat/rooms/${_chat.id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    const deleteChatRoom = await deleteUserSelectedChatRoom.json();
-    */
-    
+    setOpenDeleteId(_chat.id);
   };
 
     // chatbox 메시지 전송 - chatbox 버튼 클릭
@@ -265,8 +279,17 @@ export function ChatInterface() {
 
       console.log(uesrChatRooms);
     })();
-    
   }, []);
+
+  // hasStartedConversation이 true가 되면 다음 프레임에 mounted=true로 전환
+  useEffect(() => {
+    if (hasStartedConversation) {
+      const id = requestAnimationFrame(() => setMounted(true));
+      return () => cancelAnimationFrame(id);
+    } else {
+      setMounted(false);
+    }
+  }, [hasStartedConversation]);
 
   return (
     <Fragment>
@@ -274,14 +297,9 @@ export function ChatInterface() {
       ? (
         <div className="h-dvh min-h-screen bg-emerald-50 dark:bg-gray-900 text-gray-900 dark:text-white">
           {/* Main Content */}
-          <div className="max-w-4xl mx-auto pt-10 pr-6 pb-6 pl-6">
+          <div className="max-w-4xl mx-auto pt-8 pr-6 pb-8 pl-6">
             <div className="flex items-center justify-center mb-8">
               <div className="flex items-center space-x-3 flex-col">
-                {/*<div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 text-white-600">
-                    <MediBot />
-                  </div>
-                </div>*/}
                 {welcomeMessage.map((message) => (
                   <div
                     key={message.id}
@@ -296,17 +314,15 @@ export function ChatInterface() {
 
             {/* New Chat Button */}
             <div
-              className="w-full mb-6 pt-4 pl-2 pr-2 pb-4 transition-colors flex items-center space-x-3 text-left"
+              className="w-full pt-2 pl-2 pr-2 pb-8 transition-colors flex items-center text-left"
               >
-              <div>
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <MediBot />
-                </div>
-              </div>
               <form
                 onSubmit={handleSendMessage}
                 className="flex gap-3 w-full"
                 >
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                  <MediBot />
+                </div>
                 <div className="w-full">
                   <Input
                     onChange={(e) => setInputMessage(e.target.value)}
@@ -343,35 +359,81 @@ export function ChatInterface() {
                           `${_toDate.getFullYear()}/${_toDate.getMonth()}/${_toDate.getDate()}`
                         )(new Date(chat.created_at))}</p>
                       </div>
-                      <span
-                        onClick={() => handleDeleteChatRoom(chat)}
-                        className="cursor-pointer text-xs text-gray-500 ml-4 flex-shrink-0">
-                          <IconTrash2 />
-                      </span>
+                      <Popover
+                        open={openDeleteId === chat.id}
+                        onOpenChange={(open) => {
+                          // 이 행의 Popover가 열릴/닫힐 때만 상태 변경
+                          if (open) {
+                            setTargetChat(chat);
+                            setOpenDeleteId(chat.id);
+                          } else if (openDeleteId === chat.id) {
+                            setOpenDeleteId(null);
+                          }
+                        }}
+                      >
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteChatRoom(chat);
+                            }}
+                            className="cursor-pointer text-xs text-gray-500 ml-4 flex-shrink-0"
+                            aria-haspopup="dialog"
+                            aria-expanded={openDeleteId === chat.id}
+                          >
+                            <IconTrash2 />
+                          </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent
+                          className="w-auto p-4 space-y-3"
+                          align="center"
+                          side="left"
+                          sideOffset={12}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                          onCloseAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <div className="text-sm flex justify-center">정말 삭제하시겠습니까?</div>
+                          <div className="flex justify-center gap-2">
+                            <button
+                              type="button"
+                              className="cursor-pointer px-3 py-1.5 text-sm rounded border border-gray-300 hover:bg-gray-50"
+                              onClick={() => setOpenDeleteId(null)}
+                            >
+                              취소
+                            </button>
+                            <button
+                              type="button"
+                              className="cursor-pointer px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+                              onClick={async () => {
+                                if (!targetChat) return;
+
+                                await deleteChatRoom();
+                                
+                                setOpenDeleteId(null);
+                              }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 // </Link>
               ))}
             </div>
-            <Confirm
-              isOpen={showDeleteMessage}
-              onOpenChange={setShowDeleteMessage}
-              onConfirm={async () => {
-                if (!targetChat) return;
-                // 삭제 API 호출 예시
-                // await fetch(`/api/chat/rooms/${targetChat.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` }});
-                // 성공 후 목록 갱신 등
-              }}
-              title="채팅 삭제"
-              message="정말 삭제하시겠습니까?"
-              cancelLabel="취소"
-              confirmLabel="삭제"
-            />
           </div>
         </div>)
       : (
         <div
-          className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden"
+          // className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden"
+          className={[
+            "chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden",
+            // "transition-all duration-1000 ease-out transform",
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          ].join(" ")}
           >
           {/* 스크롤 영역 */}
           <div
@@ -455,7 +517,6 @@ export function ChatInterface() {
               )}
             </div>
           </div>
-    
           {/* 입력 영역 (Footer) */}
           <div className="shrink-0 bg-white border-t border-gray-200 p-4">
             <div className="max-w-4xl mx-auto">
