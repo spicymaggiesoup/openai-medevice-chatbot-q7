@@ -79,7 +79,7 @@ export function SearchHospitalsInterface() {
       <div className="hospital-table bg-white rounded-lg shadow-sm border border-gray-200 flex-1 min-h-0 flex flex-col p-0">
         <div className="overflow-auto">
           <table className="min-w-[1100px] table-auto w-full">
-            <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left py-4 px-6 font-semibold text-gray-900 whitespace-nowrap">병원 이름</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-900 min-w-[320px]">주소</th>

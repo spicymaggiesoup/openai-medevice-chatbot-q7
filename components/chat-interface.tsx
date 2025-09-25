@@ -13,7 +13,8 @@ import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@
 
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/input" 
+import { Confirm } from "@/components/ui/confirm" 
 import { IconBackward } from "@/components/icon/icon-backward"
 import { IconTrash2 } from "@/components/icon/icon-trash"
 import { MediBot } from "@/components/img/medi-bot"
@@ -65,6 +66,9 @@ export function ChatInterface() {
   const [isChatMainPage, setIsChatMainPage] = useState(true);
 
   const [hasStartedConversation, setHasStartedConversation] = useState(false);
+
+  const [showDeleteMessage, setShowDeleteMessage] = useState(false);
+  const [targetChat, setTargetChat] = useState<any | null>(null);
 
   const [isTyping, setIsTyping] = useState(false);
   const [activeTyping, setActiveTyping] = useState(false);
@@ -127,7 +131,7 @@ export function ChatInterface() {
 
     console.log('[chart-interface] inputMessage :: ', inputMessage);
 
-    setHasStartedConversation(true);
+
 
     // const userMessage: any = {
     //   id: Date.now().toString(),
@@ -167,13 +171,15 @@ export function ChatInterface() {
 
     // 오타율 검사(말이되는 말(한글)인지)
     //incorrectSpellCheck(inputMessage);
+
+    setHasStartedConversation(true);
   };
 
   const handleDeleteChatRoom = async(_chat: any) => {
     console.log(_chat);
 
-
-
+    setTargetChat(_chat);
+    setShowDeleteMessage(true);
     /*
     const deleteUserSelectedChatRoom = await fetch(`/api/chat/rooms/${_chat.id}`, {
       method: "DELETE",
@@ -257,10 +263,7 @@ export function ChatInterface() {
 
       setChatHistory(uesrChatRooms);
 
-
-
       console.log(uesrChatRooms);
-
     })();
     
   }, []);
@@ -280,7 +283,9 @@ export function ChatInterface() {
                   </div>
                 </div>*/}
                 {welcomeMessage.map((message) => (
-                  <div className={`text-xl w-full`}>
+                  <div
+                    key={message.id}
+                    className={`text-l w-full`}>
                     {message.content.map((_message: string, order: any) => (
                       <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
                     ))}
@@ -291,7 +296,7 @@ export function ChatInterface() {
 
             {/* New Chat Button */}
             <div
-              className="w-full mb-6 p-4 transition-colors flex items-center space-x-3 text-left"
+              className="w-full mb-6 pt-4 pl-2 pr-2 pb-4 transition-colors flex items-center space-x-3 text-left"
               >
               <div>
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
@@ -321,8 +326,9 @@ export function ChatInterface() {
               </div>
             </div>
 
-            {/* Chat History */}
-            <div className="chat-history space-y-3 overflow-auto max-h-[61vh]">
+            {/* Chat History
+            <div className="chat-history space-y-3 overflow-auto max-h-[61vh]"> */}
+            <div className="chat-history space-y-3 overflow-auto max-h-[61vh] supports-[height:100dvh]:max-h-[61dvh]">
               {chatHistory.map((chat: any) => (
                 // <Link key={chat.id} href="/chat">
                   <div
@@ -333,7 +339,9 @@ export function ChatInterface() {
                         <h3 className="font-medium text-gray-900 dark:text-white mb-1 group-hover:text-teal-600 dark:group-hover:text-teal-500">
                           {chat.title} 문의내역 보기
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{chat.created_at}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{((_toDate) => 
+                          `${_toDate.getFullYear()}/${_toDate.getMonth()}/${_toDate.getDate()}`
+                        )(new Date(chat.created_at))}</p>
                       </div>
                       <span
                         onClick={() => handleDeleteChatRoom(chat)}
@@ -345,6 +353,20 @@ export function ChatInterface() {
                 // </Link>
               ))}
             </div>
+            <Confirm
+              isOpen={showDeleteMessage}
+              onOpenChange={setShowDeleteMessage}
+              onConfirm={async () => {
+                if (!targetChat) return;
+                // 삭제 API 호출 예시
+                // await fetch(`/api/chat/rooms/${targetChat.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` }});
+                // 성공 후 목록 갱신 등
+              }}
+              title="채팅 삭제"
+              message="정말 삭제하시겠습니까?"
+              cancelLabel="취소"
+              confirmLabel="삭제"
+            />
           </div>
         </div>)
       : (
