@@ -16,20 +16,13 @@ import { Input } from "@/components/ui/input"
 import { Confirm } from "@/components/ui/confirm"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { IconBackward } from "@/components/icon/icon-backward"
+import { IconHome } from "@/components/icon/icon-home"
 import { IconTrash2 } from "@/components/icon/icon-trash"
 import { MediBot } from "@/components/img/medi-bot"
 
 import { MapLayout } from "@/components/map-layout"
 import { chatInterfaceTemplate } from "@/lib/template"
 import { Send, LogOut, Home, Activity, Clock, Plus, Navigation, Phone } from "lucide-react"
-
-type WelcomTemlate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
-type EvaluatingTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; nextConnect: boolean;}[];
-type ScoreHighTemplate = () => { id: string; content: string[]; sendmessage_typeer: string; timestamp: Date; type: string; }[];
-type ScoreLowTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
-type RecommendTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; buttons: string[]; buttonsCallback: any[]; }[];
-type HospitalsTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; location: string[]; }[];
-type AdiosTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
 
 const INTERFACE_TEMPLATE: any /*{
   welcome: WelcomTemlate;
@@ -51,25 +44,20 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
 
   const [messageStep, setMessageStep] = useState(step);
 
-  const [chatHistory, setChatHistory] = useState([]);
-
   const [inputMessage, setInputMessage] = useState("");
 
   const [isChatMainPage, setIsChatMainPage] = useState(true);
 
-  const [hasStartedConversation, setHasStartedConversation] = useState(false);
-
-  // 상단 state들 옆에 추가
-  const [mounted, setMounted] = useState(false);
-
-  const [showDeleteMessage, setShowDeleteMessage] = useState(false);
-  const [openDeleteId, setOpenDeleteId] = useState<string | number | null>(null);
   const [targetChat, setTargetChat] = useState<any | null>(null);
 
-  const [isTyping, setIsTyping] = useState(showTyping);
-  const [activeTyping, setActiveTyping] = useState(false);
+  const [goToChatMain, setGoToChatMain] = useState(false);
+
+  const [isTypingEffect, setIsTypingEffect] = useState(showTyping);
+  const [userInputDisabled, setUserInputDisabled] = useState(false);
   const [diseaseName, setDiseaseName] = useState("");
   const [roomId, setRoomId] = useState(id);
+
+  const router = useRouter();
 
   // messages on template 가져오기
   const getMessage = (_step: any, symptom?: string, list?:string[]) => 
@@ -151,7 +139,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
       message_type: "USER",
     }]);
 
-    setIsTyping(true);
+    setIsTypingEffect(true);
 
     const { content } = await sendChatText(messageContent);
 
@@ -287,18 +275,18 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
   };
 
   const flattenMessages = (input: any[]): any[] => {
-    const result: any[] = [];
+    const resultMessages: any[] = [];
 
-    function walk(item: any) {
+    function flattern(item: any) {
       if (Array.isArray(item)) {
-        item.forEach(walk); // 배열이면 안으로 들어가서 재귀
+        item.forEach(flattern);
       } else if (item && typeof item === "object") {
-        result.push(item); // 객체면 결과에 추가
+        resultMessages.push(item);
       }
     }
 
-    walk(input);
-    return result;
+    flattern(input);
+    return resultMessages;
   };
 
   useEffect(() => {
@@ -308,13 +296,57 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
 
     const _messages = flattenMessages(message);
 
+    // 메시지 셋
     setMessages(_messages);
-    setIsTyping(false);
 
+    // 타이핑 효과 숨김
+    setIsTypingEffect(false);
+    setUserInputDisabled(true);
   }, []);
 
   return (
     <div className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden">
+      <Popover
+        open={goToChatMain}
+      >
+        <PopoverTrigger asChild>
+          <div
+            onClick={() => setGoToChatMain(true)}
+            className="cursor-pointer p-2 position-fixed right text-teal"
+            >
+            <IconHome />
+          </div>
+        </PopoverTrigger>
+         <PopoverContent
+          className="w-auto p-4 space-y-3"
+          align="center"
+          side="right"
+          sideOffset={0}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          <div className="text-sm flex justify-center">채팅방을 나가시겠습니까?</div>
+          <div className="flex justify-center gap-2">
+            <button
+              type="button"
+              className="cursor-pointer px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+              onClick={async () => {
+                //setGoToChatMain(true);
+                router.replace('/chat');
+              }}
+            >
+              나가기
+            </button>
+            <button
+              type="button"
+              className="cursor-pointer px-3 py-1.5 text-sm rounded border border-gray-300 hover:bg-gray-50"
+              onClick={() => setGoToChatMain(false)}
+            >
+              취소
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
       {/* 스크롤 영역 */}
       <div
         // ref={chatRef}
@@ -377,7 +409,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
             </div>
           ))}
 
-          {isTyping && (
+          {isTypingEffect && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
@@ -405,11 +437,11 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
               name="send-message-input"
               placeholder="MeDeviSe에게 문의하세요."
               className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
-              disabled={activeTyping}
+              disabled={userInputDisabled}
             />
             <Button
               type="submit"
-              disabled={!inputMessage.trim() || isTyping}
+              disabled={!inputMessage.trim() || isTypingEffect}
               className="bg-teal-500 hover:bg-emerald-600 text-white rounded-xl px-6"
             >
               <Send className="w-4 h-4" />
