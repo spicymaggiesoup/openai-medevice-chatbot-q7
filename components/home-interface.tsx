@@ -28,17 +28,17 @@ const INTERFACE_TEMPLATE: any /*{
 
 const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
 
+// 컴포넌트 스플리팅
+const ChatInterface      = lazy(() => import("@/components/chat-interface").then(m => ({ default: m.ChatInterface })));
+const HistoryInterface   = lazy(() => import("@/components/chat-history-interface").then(m => ({ default: m.ChatHistoryInterface })));
+const HospitalList       = lazy(() => import("@/components/hospital-list-interface").then(m => ({ default: m.HospitalListInterface })));
+const SearchHospitals    = lazy(() => import("@/components/search-hospitals-interface").then(m => ({ default: m.SearchHospitalsInterface })));
+
 export function HomeInterface() {
   // 기본은 Chat 화면
   type PageKey = "chat" | "history" | "hospital-list" | "search";
   const [currentPage, setCurrentPage] = useState<PageKey>("chat");
   
-  // 컴포넌트 스플리팅
-  const ChatInterface      = lazy(() => import("@/components/chat-interface").then(m => ({ default: m.ChatInterface })));
-  const HistoryInterface   = lazy(() => import("@/components/chat-history-interface").then(m => ({ default: m.ChatHistoryInterface })));
-  const HospitalList       = lazy(() => import("@/components/hospital-list-interface").then(m => ({ default: m.HospitalListInterface })));
-  const SearchHospitals    = lazy(() => import("@/components/search-hospitals-interface").then(m => ({ default: m.SearchHospitalsInterface })));
-
   // 사용자정보
   const [age, setAge] = useState(useUserInfo((s) => s.age));
   const [gender, setGender] = useState(useUserInfo((s) => s.gender));
@@ -59,6 +59,12 @@ export function HomeInterface() {
   ];
 
   // 컴포넌트 매핑
+  // const pages = useMemo(() => ({
+  //   chat: ChatInterface,
+  //   history: HistoryInterface,
+  //   "hospital-list": HospitalList,
+  //   search: SearchHospitals,
+  // }), []);
   const pages = useMemo<Record<PageKey, React.ComponentType>>(
     () => ({
       "chat": ChatInterface,
@@ -228,7 +234,7 @@ export function HomeInterface() {
         {/* <main className="page-container flex-1 flex flex-col min-h-0 h-dvh"> */}
         <main className="page-container flex-1 flex flex-col min-h-0 overflow-hidden">
           <Suspense fallback={<div className="p-6 text-gray-500">로딩 중…</div>}>
-            <PageComponent />
+            <PageComponent key={currentPage} />
           </Suspense>
         </main>
       </div>

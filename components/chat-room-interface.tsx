@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { Fragment, useState, useEffect, useRef, useCallback } from "react"
+import { Fragment, useState, useEffect, useRef, useCallback, useLayoutEffect } from "react"
 
 import Link from "next/link"
 
-import { redirect, useRouter } from "next/navigation";
+import { redirect, useRouter, usePathname } from "next/navigation";
 
 // import Hanspell  from "hanspell";
 
@@ -36,35 +36,75 @@ const INTERFACE_TEMPLATE: any /*{
 
 const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
 
-export function ChatRoomInterface({ id, step, message, showTyping, onSendChatText}: any) {
+// 컴포넌트 파일 맨 위(모듈 스코프)
+let _bootstrappedOnce = false;
+
+export function ChatRoomInterface({ id, step, message, showTyping}: any) {
   // 토큰
   const token = useChatToken((s) => s.chatToken);
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [messages, setMessages] = useState<any[]>([]);
 
   const [messageStep, setMessageStep] = useState(step);
 
+  const [bootstrapped, setBootstrapped] = useState(false);
+
   const [inputMessage, setInputMessage] = useState("");
 
   const [isChatMainPage, setIsChatMainPage] = useState(true);
+  
+  const [searchAPI, setSearchAPI] = useState(false);
 
   const [targetChat, setTargetChat] = useState<any | null>(null);
 
   const [goToChatMain, setGoToChatMain] = useState(false);
+  
+  const [botMessageFromPOST] = useState("증상에 대해 더 자세히 알려주시면 보다 정확한 정보를 제공해드릴 수 있습니다.");
 
+  const chatRef = useRef<HTMLDivElement | null>(null);
   const [isTypingEffect, setIsTypingEffect] = useState(showTyping);
   const [userInputDisabled, setUserInputDisabled] = useState(false);
   const [diseaseName, setDiseaseName] = useState("");
   const [roomId, setRoomId] = useState(id);
+  const [evaluateScore] = useState(95); 
 
   const router = useRouter();
+  const pathname = usePathname();
 
   // messages on template 가져오기
   const getMessage = (_step: any, symptom?: string, list?:string[]) => 
     ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step](symptom, list));
 
 
-  const sendChatText = async(content: any) => onSendChatText(roomId, content);
+  //const sendChatText = async(content: any) => onSendChatText(roomId, content);
+    const sendChatText = async(content: any) => {
+    if (roomId) {
+      try {
+        // 메시지 전송
+        const sendChatMessage = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ content }),
+        });
+
+        const chatRooms = await sendChatMessage.json();
+
+        const { bot_response, message} = chatRooms;
+
+        console.log("[chat-interface] Send message :bot_message: ", bot_response);
+        console.log("[chat-interface] Send message :user_message: ", message);
+
+        return bot_response;
+      } catch(e) {
+        console.error(e);
+      }
+    }
+  }
 
   // 위치기반 병원추천
   const recommendHospitals = async() => {
@@ -117,20 +157,166 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
 
   };
 
+  const scrollToBottom = () => {
+    if (chatRef.current !== null) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  };
+
+  const showBotMessage = async(_userMessage: any) => {
+    const botMessage: any = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      content: [],
+      sender: "BOT",
+    };
+
+    // 다음에 보일 메시지 체크
+    let _step = MESSAGE_SCENARIO[messageStep];
+
+    // 평가결과..
+    if (_step instanceof Array) {
+      _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
+    }
+
+    Object.assign(botMessage, getMessage(_step), {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+    });
+
+    setMessages((prev) => [...prev, botMessage]);
+    
+    const { content } = await sendChatText(`${messageStep}_BOT_${botMessage.content.join('')}`);
+
+    chatRef.current?.scrollIntoView({ behavior: "smooth" });
+
+    if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
+      if (searchAPI) return false;
+
+      const nextStep = messageStep + 1;
+      setMessageStep(nextStep);
+
+      let content: any;
+      const [diseaseName, score, messageContent]: any = await sendSymptomMessage(_userMessage);
+
+      console.log("[chat-interface] Result sysmptom :: ", messageContent);
+
+      if (!score) {
+        console.log('[chart-interface] score가 너무 낮아서, 질병판별 불가.');
+        content = [messageContent];
+      } else {
+        console.log('[chart-interface] 질병을 판별 함.');
+        content = messageContent.split('\n');
+      }
+
+      setMessages((prev) => [...prev, {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        content, //[messageContent],
+        sender: "BOT",
+      }]);
+
+      if (score) {
+        setTimeout(() => {
+          setMessages((prev) => [...prev, Object.assign({
+            id: Date.now().toString(),
+            timestamp: new Date(),
+            content: [],
+            sender: "BOT",
+          }, getMessage('recommend', diseaseName))]);
+        }, 1500);
+      } else {
+        // evaluate 다시
+        setMessageStep(1);
+      }
+    }
+
+    setIsTypingEffect(false);
+    setUserInputDisabled(showTyping);
+  };
+    
+  const sendSymptomMessage = async(_message: any) => {
+    setSearchAPI(true);
+    const _roomId = roomId;
+
+    if (_roomId) {
+
+      let resultDisease = "";
+
+      try {
+        // 증상 분석
+        const sendSymptom = await fetch(`/api/ml/analyze-symptom`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            chat_room_id: roomId,
+            text: _message,
+          }),
+        });
+
+        const resultDiseases = await sendSymptom.json();
+        
+        // 질병예측 결과
+        const {
+          chat_room_id,
+          processed_text,
+          disease_classifications,
+          top_disease,
+          confidence,
+          formatted_message,
+        } = resultDiseases;
+
+        console.log("[chat-interface] Send symptoms: top_disease", top_disease);
+        console.log("[chat-interface] Send symptoms: confidence", confidence);
+        console.log("[chat-interface] Send symptoms: formatted_message", formatted_message);
+
+        // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
+
+        setSearchAPI(false);
+
+        if (top_disease) {
+          if (confidence >= 0.8) {
+            setDiseaseName(top_disease);
+
+            return [top_disease, confidence, formatted_message];
+          }
+        }
+        return ['', 0, getMessage('score_low')['content'].join('')];
+
+      } catch(e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const manageSendMessage = async(_messageContent: string) => {
+    const { content } = await sendChatText(_messageContent);
+
+    console.log('[chat-room-interface] content :: ', content);
+    console.log('[chat-room-interface] message :before delete: ', messages);
+
+    if (content === botMessageFromPOST) {
+      messages.map(item => {
+        if (item === botMessageFromPOST) {
+          delete messages[item];
+
+          console.log('[chat-room-interface] message :after delete: ', messages);
+
+          return messages;
+        }
+      })
+    }
+  };
+
   // chatbox 메시지 전송
-  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const formData = new FormData(e.currentTarget);
-    const messageContent = formData.get("send-message-input") as string;
-
-    // 입력여부 확인
-    if (!messageContent || !messageContent.trim()) return;
+  const handleSendMessage = async () => {
+    const messageContent = inputRef.current?.value ?? "";
+    if (!messageContent.trim()) return;
 
     console.log('[chart-interface] inputMessage :: ', messageContent);
-
-    const nextStep = messageStep + 1;
-    setMessageStep(nextStep);
 
     setMessages((prev) => [...prev, {
       id: Date.now().toString(),
@@ -139,170 +325,146 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
       message_type: "USER",
     }]);
 
+    const nextStep = messageStep + 1;
+    setMessageStep(nextStep);
+
     setIsTypingEffect(true);
 
-    const { content } = await sendChatText(messageContent);
+    setUserInputDisabled(true);
 
-    console.log('[chat-room-interface] content :: ', content);
+    setMessages((prev) => [...prev, getMessage(MESSAGE_SCENARIO[nextStep])]);
 
-    // setTimeout(() => {
-    //   const nextStep = messageStep + 1;
-    //   setMessageStep(nextStep);
-
-    //   const userMessage: any = {
-    //     id: Date.now().toString(),
-    //     timestamp: new Date(),
-    //     content: [message],
-    //     sender: "USER",
-    //   };
-
-    //   setHasStartedConversation(true);
-
-    //   setMessages((prev) => [...prev, {
-    //     id: Date.now().toString(),
-    //     timestamp: new Date(),
-    //     content: [message],
-    //     sender: "USER",
-    //   }]);
-
-    //   setIsTyping(true);
-
-    //   setTimeout(() => {
-    //     setIsTyping(false);
-
-    //     const _messages = getMessage(MESSAGE_SCENARIO[nextStep]);
-
-    //     console.log(_messages);
-
-    //     setMessages((prev) => [...prev, _messages]);
-    //   }, 1000);
-
-    // }, 1000);
-
-    // const userMessage: any = {
-    //   id: Date.now().toString(),
-    //   timestamp: new Date(),
-    //   content: [],
-    //   sender: "USER",
-    // };
-
-    // // 증상설명...
-    // if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-    //   const _inputMessage = await sendUserMessage(inputMessage);
-
-    //   setUserMessageContent(_inputMessage);
-
-    //   Object.assign(userMessage, {
-    //     content: [_inputMessage]
-    //   });
-
-    //   console.log('[chart-interface] USER STEP1  :: ', _inputMessage);
-
-    //   //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
-    //   setUserStep(userStep + 1);
-    //   setMessageStep(messageStep + 1);
-    //   setMessages((prev) => [...prev, userMessage]);
-    //   setInputMessage("");
-    //   setIsTyping(false);
-    //   setActiveTyping(false);
-
-    //   // Simulate bot response
-    //   // setTimeout(() => {
-    //   // 챗룸 연결
-      
-
-    //   showBotMessage(_inputMessage);
-    //   // }, 1500);
-    //}
-
-    // 오타율 검사(말이되는 말(한글)인지)
-    //incorrectSpellCheck(inputMessage);
+    const _content = await manageSendMessage(`${nextStep}_USER_${messageContent}`);
+    showBotMessage(_content);
   };
 
-  // chatbox 메시지 전송 - chatbox 버튼 클릭
+    // chatbox 메시지 전송 - chatbox 버튼 클릭
   const handleButtonClick = async(_message: string) => {
-    // setHasStartedConversation(true);
     // 사용자 답변 (클릭한 버튼 내용)
-    // setMessages((prev) => [...prev, {
-    //   id: Date.now().toString(),
-    //   content: [_message],
-    //   sender: "USER",
-    //   timestamp: new Date(),
-    // }]);
-    // setInputMessage("")
-    // setIsTyping(true)
-    // setActiveTyping(true)
+    setMessages((prev) => [...prev, {
+      id: Date.now().toString(),
+      content: [_message],
+      sender: "user",
+      timestamp: new Date(),
+    }]);
+    setInputMessage("");
+    setIsTypingEffect(true);
+    setUserInputDisabled(true);
 
-    // const botMessage: any = {
-    //   id: Date.now().toString(),
-    //   timestamp: new Date(),
-    //   content: [],
-    //   sender: "bot",
-    // };
+    const botMessage: any = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      content: [],
+      sender: "bot",
+    };
 
-    // //
-    // if (_message.includes('네')) {
-    //   const recommendedHospitals = await recommendHospitals();
+    //
+    if (_message.includes('네')) {
+      const recommendedHospitals = await recommendHospitals();
 
-    //   console.log('[chat-interface] 네 버튼으로 추천받은 병원리스트: ', recommendedHospitals);
+      console.log('[chat-interface] 네 버튼으로 추천받은 병원리스트: ', recommendedHospitals);
 
-    //   setActiveTyping(false);
-    //   setInputMessage("");
-    //   setIsTyping(false);
+      setIsTypingEffect(false);
+      setInputMessage("");
+      setIsTypingEffect(false);
       
-    //   Object.assign(botMessage, getMessage("hospitals", diseaseName, recommendedHospitals));
+      Object.assign(botMessage, getMessage("hospitals", diseaseName, recommendedHospitals));
     
-    // // 종료
-    // } else if (_message.includes('아니요')) {
-    //   setActiveTyping(false);
+    // 종료
+    } else if (_message.includes('아니요')) {
+      setUserInputDisabled(false);
       
-    //   Object.assign(botMessage, Object.assign({
-    //     id: Date.now().toString(),
-    //     timestamp: new Date(),
-    //   }, getMessage("adios")));
+      Object.assign(botMessage, Object.assign({
+        id: Date.now().toString(),
+        timestamp: new Date(),
+      }, getMessage("adios")));
 
-    //   setIsTyping(false);
-    //   setActiveTyping(false);
+      setIsTypingEffect(false);
+      setUserInputDisabled(false);
 
-    // // 다른걸 입력했다 ?
-    // } else {
-    //   Object.assign(botMessage, {
-    //     content: ['버튼을 선택해주세요! 🙌']
-    //   });
-    // }
+    // 다른걸 입력했다 ?
+    } else {
+      Object.assign(botMessage, {
+        content: ['버튼을 선택해주세요! 🙌']
+      });
+    }
 
-    // setMessages((prev) => [...prev, botMessage]);
+    setMessages((prev) => [...prev, botMessage]);
   };
 
   const flattenMessages = (input: any[]): any[] => {
     const resultMessages: any[] = [];
+    let step;
 
     function flattern(item: any) {
       if (Array.isArray(item)) {
         item.forEach(flattern);
       } else if (item && typeof item === "object") {
+        if (typeof item.content === "string") {
+          const prefixList = /[0-9]_(?:USER|BOT)_/g;
+          let message_type = (item.content).match(prefixList);
+          if (message_type && message_type.length) {
+            message_type = message_type.join('');
+            step = Number(message_type.replace(`_USER_`, '').replace('_BOT_', ''));
+            message_type = message_type.replace(`${step}_USER_`, `USER`).replace(`${step}_BOT_`, 'BOT');
+
+            const content = (item.content).replace(/\b[0-9]_(?:USER|BOT)_\b/g, "");
+            Object.assign(item, { content, message_type });
+          }
+        }
+        if (item.content instanceof Array) {
+          if (item.content[0] === botMessageFromPOST) {
+            return false;
+          }
+        }
         resultMessages.push(item);
       }
     }
 
     flattern(input);
-    return resultMessages;
+    return [step, resultMessages];
   };
 
   useEffect(() => {
+    // if (_bootstrappedOnce) return;
+    // _bootstrappedOnce = true;
+
     console.log('[chat-room-interface] Message step: ', step);
     console.log('[chat-room-interface] Message message: ', message);
     console.log('[chat-room-interface] Message showTyping: ', showTyping);
 
-    const _messages = flattenMessages(message);
-
-    // 메시지 셋
+    // 초기 1회만 실행할 로직
+    const [_step, _messages] = flattenMessages(message);
     setMessages(_messages);
+    setIsTypingEffect(showTyping);
+    setUserInputDisabled(showTyping);
+    setMessageStep(_step || step);
 
-    // 타이핑 효과 숨김
-    setIsTypingEffect(false);
-    setUserInputDisabled(true);
+    if (MESSAGE_SCENARIO[_step || step] === "evaluating" && _messages.length) {
+      const last = _messages[_messages.length - 1];
+      const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
+      if (content) showBotMessage(content);
+    }
   }, []);
+
+  // useEffect(() => {
+  //   if (!bootstrapped) return;
+  //   if (!messages.length) return;
+
+  //   if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
+  //     const last = messages[messages.length - 1];
+  //     const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
+  //     if (content) {
+  //       showBotMessage(content);
+  //       setBootstrapped(false);
+  //     }
+  //   }
+  // }, [bootstrapped, messageStep, messages]);
+
+  // 스크롤 이동
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   return (
     <div className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden">
@@ -312,7 +474,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
         <PopoverTrigger asChild>
           <div
             onClick={() => setGoToChatMain(true)}
-            className="cursor-pointer p-2 position-fixed right text-teal"
+            className="cursor-pointer pt-4 fixed right-5 text-teal-700 text-xl"
             >
             <IconHome />
           </div>
@@ -320,7 +482,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
          <PopoverContent
           className="w-auto p-4 space-y-3"
           align="center"
-          side="right"
+          side="left"
           sideOffset={0}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
@@ -330,9 +492,20 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
             <button
               type="button"
               className="cursor-pointer px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700"
-              onClick={async () => {
-                //setGoToChatMain(true);
-                router.replace('/chat');
+              onClick={() => {
+                //router.replace(`/home?v=${roomId}`);
+                // 1) 상태 초기화
+                // setMessageStep(0);
+                // setMessages([]);
+                // setIsTypingEffect(false);
+                // setGoToChatMain(false);
+
+                // 2) 같은 경로면 쿼리를 붙여 강제 내비게이션
+                if (pathname === "/home") {
+                  router.replace(`/home?v=${Date.now()}`); // URL이 달라져서 remount
+                } else {
+                  router.replace("/home");
+                }
               }}
             >
               나가기
@@ -349,9 +522,11 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
       </Popover>
       {/* 스크롤 영역 */}
       <div
-        // ref={chatRef}
+        ref={chatRef}
         className="flex-1 min-h-0 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div
+          className="max-w-4xl mx-auto space-y-6"
+          >
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.message_type === "USER" ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-md ${message.message_type === "USER" ? "" : "w-full max-w-2xl"}`}>
@@ -432,21 +607,22 @@ export function ChatRoomInterface({ id, step, message, showTyping, onSendChatTex
       {/* 입력 영역 (Footer) */}
       <div className="shrink-0 bg-white border-t border-gray-200 p-4">
         <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex gap-3">
+          <div className="flex gap-3">
             <Input
+              ref={inputRef}
               name="send-message-input"
               placeholder="MeDeviSe에게 문의하세요."
               className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
               disabled={userInputDisabled}
             />
             <Button
-              type="submit"
-              disabled={!inputMessage.trim() || isTypingEffect}
+              onClick={handleSendMessage}
+              // disabled={!inputMessage.trim() || isTypingEffect}
               className="bg-teal-500 hover:bg-emerald-600 text-white rounded-xl px-6"
             >
               <Send className="w-4 h-4" />
             </Button>
-          </form>
+          </div>
         </div>
       </div>
     </div>

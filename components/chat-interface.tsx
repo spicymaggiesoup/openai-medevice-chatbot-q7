@@ -3,54 +3,33 @@
 import type React from "react"
 import { Fragment, useState, useEffect, useRef, useCallback } from "react"
 
-import Link from "next/link"
-
-import { redirect, useRouter } from "next/navigation";
-
-// import Hanspell  from "hanspell";
-
-import { useChatToken, useUserInfo, useMedicalDepartments, useChatRoom } from "@/lib/store";
+import { useChatToken } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input" 
-import { Confirm } from "@/components/ui/confirm"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { IconBackward } from "@/components/icon/icon-backward"
 import { IconTrash2 } from "@/components/icon/icon-trash"
 import { MediBot } from "@/components/img/medi-bot"
 
-import { MapLayout } from "@/components/map-layout"
 import { ChatRoomInterface } from "@/components/chat-room-interface"
 import { chatInterfaceTemplate } from "@/lib/template"
-import { Send, LogOut, Home, Activity, Clock, Plus, Navigation, Phone } from "lucide-react"
-
-type WelcomTemlate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
-type EvaluatingTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; nextConnect: boolean;}[];
-type ScoreHighTemplate = () => { id: string; content: string[]; senmessage_typeder: string; timestamp: Date; type: string; }[];
-type ScoreLowTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
-type RecommendTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; buttons: string[]; buttonsCallback: any[]; }[];
-type HospitalsTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; location: string[]; }[];
-type AdiosTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
+import { Send } from "lucide-react"
 
 const INTERFACE_TEMPLATE: any /*{
-  welcome: WelcomTemlate;
-  evaluating: EvaluatingTemplate;
-  score_high: ScoreHighTemplate;
-  score_low: ScoreLowTemplate;
-  recommend: RecommendTemplate;
-  hospitals: HospitalsTemplate;
-  adios: AdiosTemplate;
+  welcome: WelcomTemlate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
+  evaluating: EvaluatingTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; nextConnect: boolean;}[];
+  score_high: ScoreHighTemplate = () => { id: string; content: string[]; senmessage_typeder: string; timestamp: Date; type: string; }[];
+  score_low: ScoreLowTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
+  recommend: RecommendTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; buttons: 
+  hospitals: HospitalsTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; location: string[]; }[];
+  adios: AdiosTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
 }*/ = chatInterfaceTemplate;
-
-const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"], "recommend", "searching", "hospitals", "adios"];
 
 export function ChatInterface() {
   // 토큰
   const token = useChatToken((s) => s.chatToken);
 
-  // messages on template 가져오기
-  // const getMessage = (_step: any, symptom?: string, list?:string[]) => 
-  //   ((_templates) => _templates[Math.floor(Math.random() * (_templates.length))])(INTERFACE_TEMPLATE[_step](symptom, list));
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [welcomeMessage] = useState<any[]>([
     Object.assign(
@@ -67,16 +46,10 @@ export function ChatInterface() {
 
   const [hasStartedConversation, setHasStartedConversation] = useState(false);
 
-  // 상단 state들 옆에 추가
-  const [mounted, setMounted] = useState(false);
-
-  const [showDeleteMessage, setShowDeleteMessage] = useState(false);
   const [openDeleteId, setOpenDeleteId] = useState<string | number | null>(null);
   const [targetChat, setTargetChat] = useState<any | null>(null);
 
   const [isTyping, setIsTyping] = useState(false);
-  const [activeTyping, setActiveTyping] = useState(false);
-  const [diseaseName, setDiseaseName] = useState("");
   const [roomId, setRoomId] = useState(0);
 
   const getPastUserChatRooms = async() => {
@@ -145,12 +118,6 @@ export function ChatInterface() {
 
       return newChatRoom;
 
-      // // 성공적
-      // if (deleteChatRoom.message) {
-      //   const chatRooms = await getPastUserChatRooms();
-      //   console.log('[chat-interface] Reload chat rooms : ', chatRooms);
-      // }
-
     } catch(e) {
       console.error(e);
     }
@@ -184,85 +151,44 @@ export function ChatInterface() {
   }
 
   // chatbox 메시지 전송
-  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
+    const messageContent = inputRef.current?.value ?? "";
+    if (!messageContent.trim()) return;
 
-    const formData = new FormData(e.currentTarget);
-    const messageContent = formData.get("message-input") as string;
-
-    // 입력여부 확인
-    if (!messageContent || !messageContent.trim()) return;
-
-    console.log('[chart-interface] inputMessage :: ', messageContent);
+    console.log('[chart-interface] handleSendMessage :messageContent: ', messageContent);
 
     const {id} = await createNewChatRoom(messageContent);
     setRoomId(id);
 
-    const nextStep = messageStep + 1;
-    setMessageStep(nextStep);
-
+    console.log("[chat-interface] handleSendMessage :message_type: ", `USER_${messageStep}`);
     setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       timestamp: new Date(),
       content: [messageContent],
-      message_type: "USER",
+      message_type: `USER`,
     }]);
 
-    setIsTyping(true);
-
-    const { content } = await sendChatText(id, messageContent);
+    const { content } = await sendChatText(id, `${messageStep}_USER_${messageContent}`);
 
     setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       timestamp: new Date(),
       content: [content],
-      message_type: "bot",
+      message_type: `BOT`,
     }]);
+    console.log("[chat-interface] handleSendMessage :message_type: ", `USER_${messageStep}`);
 
+    const nextStep = messageStep + 1;
+    setMessageStep(nextStep);
+    setIsTyping(true);
     setHasStartedConversation(true);
-    // const userMessage: any = {
-    //   id: Date.now().toString(),
-    //   timestamp: new Date(),
-    //   content: [],
-    //   message_type: "USER",
-    // };
 
-    // // 증상설명...
-    // if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-    //   const _inputMessage = await sendUserMessage(inputMessage);
-
-    //   setUserMessageContent(_inputMessage);
-
-    //   Object.assign(userMessage, {
-    //     content: [_inputMessage]
-    //   });
-
-    //   console.log('[chart-interface] USER STEP1  :: ', _inputMessage);
-
-    //   //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
-    //   setUserStep(userStep + 1);
-    //   setMessageStep(messageStep + 1);
-    //   setMessages((prev) => [...prev, userMessage]);
-    //   setInputMessage("");
-    //   setIsTyping(false);
-    //   setActiveTyping(false);
-
-    //   // Simulate bot response
-    //   // setTimeout(() => {
-    //   // 챗룸 연결
-      
-
-    //   showBotMessage(_inputMessage);
-    //   // }, 1500);
-    //}
-
-    // 오타율 검사(말이되는 말(한글)인지)
-    //incorrectSpellCheck(inputMessage);
+    // 입력창 비우기
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handleDeleteChatRoom = async(_chat: any) => {
     setTargetChat(_chat);
-    setShowDeleteMessage(true);
     setOpenDeleteId(_chat.id);
   };
 
@@ -278,23 +204,29 @@ export function ChatInterface() {
 
     setMessages((prev) => [...prev, pastChatMessages]);
 
+    /*
+    전달해야하는 속성
+      id={roomId}
+      step={messageStep}
+      message={messages}
+      showTyping={isTyping}
+      status={setHasStartedConversation}
+      onSendChatText={sendChatText}
+    */
+    setRoomId(_chat.id);
+
     setHasStartedConversation(true);
   };
 
   // 과거 문의목록 조회
   useEffect(() => {
     getPastUserChatRooms();
-  }, []);
 
-  // hasStartedConversation이 true가 되면 다음 프레임에 mounted=true로 전환
-  useEffect(() => {
-    if (hasStartedConversation) {
-      const id = requestAnimationFrame(() => setMounted(true));
-      return () => cancelAnimationFrame(id);
-    } else {
-      setMounted(false);
-    }
-  }, [hasStartedConversation]);
+    setMessages(welcomeMessage);
+    setMessageStep(0);
+    setIsTyping(false);
+    setRoomId(0);
+  }, []);
 
   return (
     <Fragment>
@@ -318,10 +250,10 @@ export function ChatInterface() {
 
             {/* New Chat Button */}
             <div
-              className="w-full pt-2 pl-2 pr-2 pb-8 transition-colors flex items-center text-left"
+              className="w-full pt-2 pb-8 transition-colors flex items-center text-left"
               >
-              <form
-                onSubmit={handleSendMessage}
+              <div
+                // onSubmit={handleSendMessage}
                 className="flex gap-3 w-full"
                 >
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
@@ -329,18 +261,20 @@ export function ChatInterface() {
                 </div>
                 <div className="w-full">
                   <Input
+                    ref={inputRef}
                     name="message-input" 
                     placeholder="MeDeviSe에게 문의하세요."
                     className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl bg-white bg-opacity-50"
                   />
                 </div>
                 <Button
-                  type="submit"
+                  // type="submit"
+                  onClick={handleSendMessage}
                   className="cursor-pointer bg-teal-500 hover:bg-emerald-600 text-white rounded-xl px-6"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
-              </form>
+              </div>
               <div className="ml-auto flex items-center space-x-2">
               </div>
             </div>
@@ -351,14 +285,16 @@ export function ChatInterface() {
                 // <Link key={chat.id} href="/chat">
                   <div
                     key={chat.id}
-                    className="p-4 border-gray-200 border bg-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer group"
-                    onClick={() => {
-                      handleShowPastChat(chat);
-                    }}
+                    className="p-4 border-gray-200 border bg-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
                     >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-white mb-1 group-hover:text-teal-600 dark:group-hover:text-teal-500">
+                        <h3
+                          onClick={() => {
+                            handleShowPastChat(chat);
+                          }}
+                          className="w-fit cursor-pointer font-medium text-gray-900 dark:text-white mb-1 group-hover:text-teal-600 dark:group-hover:text-teal-500"
+                        >
                           {chat.title}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{((_toDate) => 
@@ -433,11 +369,13 @@ export function ChatInterface() {
           </div>
         </div>)
       : (<ChatRoomInterface
+          key={roomId}  // roomId가 바뀔 때만 remount
           id={roomId}
           step={messageStep}
           message={messages}
           showTyping={isTyping}
-          onSendChatText={sendChatText}
+          // status={setHasStartedConversation}
+          // onSendChatText={sendChatText}
         />)
     }
     </Fragment>
