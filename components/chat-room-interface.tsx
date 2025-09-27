@@ -102,7 +102,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
         console.log("[chat-interface] Send message :bot_message: ", bot_response);
         console.log("[chat-interface] Send message :user_message: ", message);
 
-        return bot_response;
+        return message.content;
       } catch(e) {
         console.error(e);
       }
@@ -301,17 +301,17 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     console.log('[chat-room-interface] content :: ', content);
     console.log('[chat-room-interface] message :before delete: ', messages);
 
-    if (content === botMessageFromPOST) {
-      messages.map(item => {
-        if (item === botMessageFromPOST) {
-          delete messages[item];
+    // if (botMessageFromPOST.indexOf(content) > -1) {
+    messages.map(item => {
+      if (botMessageFromPOST.indexOf(item) > -1) {
+        delete messages[item];
 
-          console.log('[chat-room-interface] message :after delete: ', messages);
+        console.log('[chat-room-interface] message :after delete: ', messages);
 
-          return messages;
-        }
-      })
-    }
+        return messages;
+      }
+    });
+    // }
   };
 
   // chatbox 메시지 전송
@@ -470,7 +470,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
           }
         }
 
-        if (botMessageFromPOST.indexOf(item.content) > -1) {
+        if (item.content instanceof Array && (botMessageFromPOST.indexOf(item.content.join()) > -1)) {
           return;
         }
 
