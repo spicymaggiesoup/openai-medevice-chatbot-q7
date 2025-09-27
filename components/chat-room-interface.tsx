@@ -55,13 +55,16 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
 
   const [isChatMainPage, setIsChatMainPage] = useState(true);
   
-  const [searchAPI, setSearchAPI] = useState(false);
+  //const [searchAPI, setSearchAPI] = useState(false);
 
   const [targetChat, setTargetChat] = useState<any | null>(null);
 
   const [goToChatMain, setGoToChatMain] = useState(false);
   
-  const [botMessageFromPOST] = useState("증상에 대해 더 자세히 알려주시면 보다 정확한 정보를 제공해드릴 수 있습니다.");
+  const [botMessageFromPOST] = useState([
+    "증상에 대해 더 자세히 알려주시면 보다 정확한 정보를 제공해드릴 수 있습니다.",
+    "분석 중입니다...",
+  ]);
 
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [isTypingEffect, setIsTypingEffect] = useState(showTyping);
@@ -79,7 +82,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
 
 
   //const sendChatText = async(content: any) => onSendChatText(roomId, content);
-    const sendChatText = async(content: any) => {
+  const sendChatText = async(content: any) => {
     if (roomId) {
       try {
         // 메시지 전송
@@ -191,7 +194,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     chatRef.current?.scrollIntoView({ behavior: "smooth" });
 
     if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-      if (searchAPI) return false;
+      //if (searchAPI) return false;
 
       const nextStep = messageStep + 1;
       setMessageStep(nextStep);
@@ -217,14 +220,14 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
       }]);
 
       if (score) {
-        setTimeout(() => {
+        //setTimeout(() => {
           setMessages((prev) => [...prev, Object.assign({
             id: Date.now().toString(),
             timestamp: new Date(),
             content: [],
             sender: "BOT",
           }, getMessage('recommend', diseaseName))]);
-        }, 1500);
+        //}, 1500);
       } else {
         // evaluate 다시
         setMessageStep(1);
@@ -232,11 +235,11 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     }
 
     setIsTypingEffect(false);
-    setUserInputDisabled(showTyping);
+    setUserInputDisabled(false);
   };
     
   const sendSymptomMessage = async(_message: any) => {
-    setSearchAPI(true);
+    //setSearchAPI(true);
     const _roomId = roomId;
 
     if (_roomId) {
@@ -275,7 +278,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
 
         // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
 
-        setSearchAPI(false);
+        //setSearchAPI(false);
 
         if (top_disease) {
           if (confidence >= 0.8) {
@@ -335,10 +338,10 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     setMessages((prev) => [...prev, getMessage(MESSAGE_SCENARIO[nextStep])]);
 
     const _content = await manageSendMessage(`${nextStep}_USER_${messageContent}`);
-    showBotMessage(_content);
+    await showBotMessage(_content);
   };
 
-    // chatbox 메시지 전송 - chatbox 버튼 클릭
+  // chatbox 메시지 전송 - chatbox 버튼 클릭
   const handleButtonClick = async(_message: string) => {
     // 사용자 답변 (클릭한 버튼 내용)
     setMessages((prev) => [...prev, {
@@ -392,6 +395,59 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     setMessages((prev) => [...prev, botMessage]);
   };
 
+  // chatbox Map 메시지 전송
+  const handleMapMessage = async (e: any) => {
+    e.preventDefault()
+
+    const hospitalInfo = e.currentTarget.name;
+    const [hospitalName, hospitalAddress, hospitalPhone] = hospitalInfo.split('^');
+
+    console.log('hospitalName : ', hospitalName, ', hospitalAddress : ', hospitalAddress, ', hospitalPhone: ', hospitalPhone);
+
+    const getHospitalId = await fetch(`/api/medical/hospitals?search=${encodeURIComponent(hospitalName)}&department_id=${null}&disease_id=${null}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const hospitalInfoResult = await getHospitalId.json();
+    const hospitalId = hospitalInfoResult[0].id;
+
+    console.log('hospitalId id:: ', hospitalId);
+
+    const hospitalLocation = await fetch(`/api/medical/hospitals/${hospitalId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const hospitalLocationResult = await hospitalLocation.json();
+
+    console.log('hospitalLocationResult:: ', hospitalLocationResult);
+
+    //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
+    setMessageStep(messageStep + 1);
+    setMessageStep(messageStep + 1);
+    setMessages((prev) => [...prev, {
+      id: Date.now().toString(),
+      content: [`🏣 ${hospitalName} (${hospitalPhone})`, ` ${hospitalAddress}`],
+      sender: "bot",
+      type: "map",
+      timestamp: new Date(),
+      hospitalName,
+      hospitalAddress,
+      hospitalPhone,
+      latitude: hospitalLocationResult.latitude,
+      longitude: hospitalLocationResult.longitude,
+    }]);
+    setInputMessage("");
+    setIsTypingEffect(false);
+    setUserInputDisabled(false);
+  };
+
   const flattenMessages = (input: any[]): any[] => {
     const resultMessages: any[] = [];
     let step;
@@ -399,10 +455,11 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     function flattern(item: any) {
       if (Array.isArray(item)) {
         item.forEach(flattern);
+        return;
       } else if (item && typeof item === "object") {
         if (typeof item.content === "string") {
           const prefixList = /[0-9]_(?:USER|BOT)_/g;
-          let message_type = (item.content).match(prefixList);
+          let message_type: any = (item.content).match(prefixList);
           if (message_type && message_type.length) {
             message_type = message_type.join('');
             step = Number(message_type.replace(`_USER_`, '').replace('_BOT_', ''));
@@ -412,11 +469,11 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
             Object.assign(item, { content, message_type });
           }
         }
-        if (item.content instanceof Array) {
-          if (item.content[0] === botMessageFromPOST) {
-            return false;
-          }
+
+        if (botMessageFromPOST.indexOf(item.content) > -1) {
+          return;
         }
+
         resultMessages.push(item);
       }
     }
@@ -426,8 +483,8 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
   };
 
   useEffect(() => {
-    // if (_bootstrappedOnce) return;
-    // _bootstrappedOnce = true;
+    if (_bootstrappedOnce) return;
+    _bootstrappedOnce = true;
 
     console.log('[chat-room-interface] Message step: ', step);
     console.log('[chat-room-interface] Message message: ', message);
@@ -440,10 +497,14 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     setUserInputDisabled(showTyping);
     setMessageStep(_step || step);
 
-    if (MESSAGE_SCENARIO[_step || step] === "evaluating" && _messages.length) {
+    if (MESSAGE_SCENARIO[step] === "evaluating" && _messages.length) {
       const last = _messages[_messages.length - 1];
       const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
-      if (content) showBotMessage(content);
+      if (content) {
+        (async() => {
+          await showBotMessage(content);
+        })();
+      }
     }
   }, []);
 
@@ -495,10 +556,12 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
               onClick={() => {
                 //router.replace(`/home?v=${roomId}`);
                 // 1) 상태 초기화
-                // setMessageStep(0);
-                // setMessages([]);
-                // setIsTypingEffect(false);
-                // setGoToChatMain(false);
+                setMessageStep(0);
+                setMessages([]);
+                setIsTypingEffect(false);
+                setGoToChatMain(false);
+
+                _bootstrappedOnce = false;
 
                 // 2) 같은 경로면 쿼리를 붙여 강제 내비게이션
                 if (pathname === "/home") {
@@ -563,14 +626,66 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
 
                   {message.type === "mapList" && (
                     <div className="flex flex-wrap gap-2 mt-4 ">
+                      {/* <MapLayout locations={message.location}/> */}
                       {message.location.map((_locationItem: any) => (
                         <div
                           key={_locationItem.id ?? `${_locationItem.name}-${_locationItem.phone ?? ''}`}
-                          className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${'bg-blue-50 border-blue-200'}`}
-                        >
-                          {/* ... mapList item ... */}
-                        </div>
-                      ))}
+                          className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
+                            'bg-blue-50 border-blue-200'
+                          }`}
+                          >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className={`font-medium text-gray-900${_locationItem.name.length >= 11 ? ' w-[180px] whitespace-nowrap text-ellipsis overflow-hidden' : ''}`}>{_locationItem.name}</div>
+                                  <span
+                                    className={`px-2 py-1 text-xs rounded-full bg-red-100 text-red-700`}
+                                  >
+                                    {_locationItem.hospital_type_name}
+                                  </span>
+                              </div>
+
+                              {_locationItem.recommended_reason && (
+                                <p className="text-xs text-gray-500 mt-1">{_locationItem.recommended_reason}</p>
+                              )}
+
+                              <p className="text-sm text-gray-600 mt-1">{_locationItem.address}</p>
+
+                              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                {_locationItem.distance && (
+                                <div className="flex items-center gap-1">
+                                  <Navigation className="w-3 h-3" />
+                                  {(_locationItem.distance).toFixed(2)} km
+                                </div>
+                                )}
+                                {_locationItem.phone && (
+                                <div className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3" />
+                                  {_locationItem.phone}
+                                </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                name={`${_locationItem.name}^${_locationItem.address}^${_locationItem.phone}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMapMessage(e);
+                                }}
+                                className="ml-2 cursor-pointer flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
+                              >
+                                <Navigation className="w-3 h-3 mr-1" />
+                                Directions
+                              </Button>
+
+                            </div>
+                          </div>
+                          </div>
+                        ))}
                     </div>
                   )}
 
