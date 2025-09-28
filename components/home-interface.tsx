@@ -30,13 +30,14 @@ const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"],
 
 // 컴포넌트 스플리팅
 const ChatInterface      = lazy(() => import("@/components/chat-interface").then(m => ({ default: m.ChatInterface })));
-const HistoryInterface   = lazy(() => import("@/components/chat-history-interface").then(m => ({ default: m.ChatHistoryInterface })));
-const HospitalList       = lazy(() => import("@/components/hospital-list-interface").then(m => ({ default: m.HospitalListInterface })));
+//const HistoryInterface   = lazy(() => import("@/components/chat-history-interface").then(m => ({ default: m.ChatHistoryInterface })));
+//const HospitalList       = lazy(() => import("@/components/hospital-list-interface").then(m => ({ default: m.HospitalListInterface })));
 const SearchHospitals    = lazy(() => import("@/components/search-hospitals-interface").then(m => ({ default: m.SearchHospitalsInterface })));
 
 export function HomeInterface() {
   // 기본은 Chat 화면
-  type PageKey = "chat" | "history" | "hospital-list" | "search";
+  type PageKey = "chat" | "search";
+  //type PageKey = "chat" | "history" | "hospital-list" | "search";
   const [currentPage, setCurrentPage] = useState<PageKey>("chat");
   
   // 사용자정보
@@ -68,8 +69,8 @@ export function HomeInterface() {
   const pages = useMemo<Record<PageKey, React.ComponentType>>(
     () => ({
       "chat": ChatInterface,
-      "history": HistoryInterface,
-      "hospital-list": HospitalList,
+      //"history": HistoryInterface,
+      //"hospital-list": HospitalList,
       "search": SearchHospitals,
     }),
     []
@@ -80,9 +81,6 @@ export function HomeInterface() {
 
   // 창크기 확인
   const handleInnerSize = () => window.innerWidth <= 768;
-
-  // 토큰
-  // const token = useChatToken((s) => s.chatToken);
 
   // 로그아웃 버튼 클릭
   const handleLogout = async() => {

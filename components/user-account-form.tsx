@@ -59,11 +59,10 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
 
     try {
       // 회원가입
-      const r = await fetch('/api/auth/register', {
+      const setAuthRegister = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
-          "accept": "application/json",
         },
         body: JSON.stringify({
           email: formData.email,
@@ -76,11 +75,11 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
           longitude: 0,
         }),
       })
-      const { detail } = await r.json()
+      const { detail } = await setAuthRegister.json();
       console.log('[user-account-form] User Location :: ', detail);
 
       if (detail && detail[0]['loc']) {
-
+        
       }
     
       setIsLoading(false);

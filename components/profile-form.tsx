@@ -67,7 +67,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
     const newAddress = formData.address
 
     // 주소변경
-    const r = await fetch('/api/users/location', {
+    const modifyLocation = await fetch('/api/users/location', {
       method: 'PUT',
       headers: {
         "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       },
       body: JSON.stringify({ road_address: newAddress }),
     })
-    const userLocation = await r.json()
+    const userLocation = await modifyLocation.json()
     console.log('[profile-form] User Location :: ', userLocation);
 
     useUserInfo.getState().setLatitude(userLocation.latitude || '');
@@ -86,8 +86,10 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
 
   const handleCompletePost = (data: Address) => {
     console.log('[postcode-layout] New roadAddress ::: ', data.roadAddress);
+    
     useUserLocationNew.getState().setAddress(data.roadAddress);
     useUserInfo.getState().setAddress(data.roadAddress);
+
     setAddress(data.roadAddress);       
     
     // 도로명/지번 등 라이브러리가 가공한 최종 주소
@@ -141,7 +143,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
              focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0
              focus:border-r-0 focus:shadow-none focus-visible:outline-none
              focus-visible:ring-0"
-              />
+              />ㅗ
             </div>
             <div>
             <Label htmlFor="age" className="flex items-center gap-2">
