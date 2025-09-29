@@ -39,9 +39,11 @@ const MESSAGE_SCENARIO = ["welcome", "evaluating" , ["score_high", "score_low"],
 // 컴포넌트 파일 맨 위(모듈 스코프)
 let _bootstrappedOnce = false;
 
-export function ChatRoomInterface({ id, step, message, showTyping}: any) {
+export function ChatRoomInterface({ id, step, message, showTyping, historyChat}: any) {
   // 토큰
   const token = useChatToken((s) => s.chatToken);
+
+  const bootstrappedRef = useRef(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -66,15 +68,18 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     "분석 중입니다...",
   ]);
 
-  const chatRef = useRef<HTMLDivElement | null>(null);
-  const [isTypingEffect, setIsTypingEffect] = useState(showTyping);
-  const [userInputDisabled, setUserInputDisabled] = useState(false);
-  const [diseaseName, setDiseaseName] = useState("");
-  const [roomId, setRoomId] = useState(id);
+  const [roomId] = useState(id);
   const [evaluateScore] = useState(95); 
 
   const router = useRouter();
   const pathname = usePathname();
+
+  const chatRef = useRef<HTMLDivElement | null>(null);
+  const [isTypingEffect, setIsTypingEffect] = useState(showTyping);
+  const [userInputDisabled, setUserInputDisabled] = useState(false);
+  const [diseaseName, setDiseaseName] = useState("");
+  const [diseaseInferenceId, setDiseaseInferenceId] = useState("");
+
 
   // messages on template 가져오기
   const getMessage = (_step: any, symptom?: string, list?:string[]) => 
@@ -113,16 +118,16 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
   const recommendHospitals = async() => {
     try {
       // 메시지 전송
-      const recommendHospitalsByDisease = await fetch(`/api/medical/recommend-by-disease`, {
+      const recommendHospitalsByDisease = await fetch(`/api/medical/recommend-hospitals`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          "max_distance": 100,
+          "max_distance": 5,
           "limit": 10,
-          "disease_name": diseaseName,
+          "inference_result_id": diseaseInferenceId,
           "chat_room_id": roomId,
         }),
       });
@@ -130,24 +135,6 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
       const recommendResult = await recommendHospitalsByDisease.json();
 
       console.log("[chat-interface] recommendHospitals : ", recommendResult);
-
-      // 진료과로 병원검색
-      // const searchHospitalsByDiseaseId = await fetch(`/api/medical/hospitals`, {
-      //   method: "GET",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     "Authorization": `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify({
-      //     "disease_id": disease_id,
-      //   }),
-      // });
-
-      // const searchedResult = await searchHospitalsByDiseaseId.json();
-
-      // console.log("[chat-interface] recommendHospitals : ", searchedResult);
-
-      //return user_message.content;
 
       return recommendResult.recommendations;
 
@@ -166,77 +153,60 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     }
   };
 
-  const showBotMessage = async(_userMessage: any) => {
-    const botMessage: any = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      content: [],
-      sender: "BOT",
-    };
-
-    // 다음에 보일 메시지 체크
-    let _step = MESSAGE_SCENARIO[messageStep];
-
-    // 평가결과..
-    if (_step instanceof Array) {
-      _step = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`
-    }
-
-    Object.assign(botMessage, getMessage(_step), {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-    });
-
-    setMessages((prev) => [...prev, botMessage]);
-    
-    const { content } = await sendChatText(`${messageStep}_BOT_${botMessage.content.join('')}`);
-
-    chatRef.current?.scrollIntoView({ behavior: "smooth" });
-
-    if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-      //if (searchAPI) return false;
-
-      const nextStep = messageStep + 1;
+  // 변경: 현재 스텝을 명시적으로 전달
+  const showBotMessage = useCallback(async (currentStep: number, _userMessage: string) => {
+    if (MESSAGE_SCENARIO[currentStep] === "evaluating") {
+      const nextStep = currentStep + 1;
       setMessageStep(nextStep);
 
-      let content: any;
       const [diseaseName, score, messageContent]: any = await sendSymptomMessage(_userMessage);
 
-      console.log("[chat-interface] Result sysmptom :: ", messageContent);
+      const contentArr = score ? messageContent.split('\n') : [messageContent];
 
-      if (!score) {
-        console.log('[chart-interface] score가 너무 낮아서, 질병판별 불가.');
-        content = [messageContent];
-      } else {
-        console.log('[chart-interface] 질병을 판별 함.');
-        content = messageContent.split('\n');
-      }
-
-      setMessages((prev) => [...prev, {
+      setMessages(prev => [...prev, {
         id: Date.now().toString(),
         timestamp: new Date(),
-        content, //[messageContent],
-        sender: "BOT",
+        content: contentArr,
+        message_type: "BOT",
       }]);
 
       if (score) {
-        //setTimeout(() => {
-          setMessages((prev) => [...prev, Object.assign({
-            id: Date.now().toString(),
-            timestamp: new Date(),
-            content: [],
-            sender: "BOT",
-          }, getMessage('recommend', diseaseName))]);
-        //}, 1500);
+        setMessages(prev => [...prev, Object.assign({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          content: [],
+          message_type: "BOT",
+        }, getMessage('recommend', diseaseName))]);
       } else {
-        // evaluate 다시
         setMessageStep(1);
       }
     }
 
+    // const botMessage: any = {
+    //   id: Date.now().toString(),
+    //   timestamp: new Date(),
+    //   content: [],
+    //   message_type: "BOT",
+    // };
+
+    // let stepKey = MESSAGE_SCENARIO[currentStep];
+    // if (Array.isArray(stepKey)) {
+    //   stepKey = `score_${(evaluateScore >= 95) ? 'high' : 'low'}`;
+    // }
+
+    // Object.assign(botMessage, getMessage(stepKey), {
+    //   id: Date.now().toString(),
+    //   timestamp: new Date(),
+    // });
+
+    // setMessages(prev => [...prev, botMessage]);
+
+    // // 네트워크 대기
+    // const { content } = await sendChatText(`${currentStep}_BOT_${botMessage.content.join('')}`);
+
     setIsTypingEffect(false);
     setUserInputDisabled(false);
-  };
+  }, [evaluateScore, sendChatText]);
     
   const sendSymptomMessage = async(_message: any) => {
     //setSearchAPI(true);
@@ -260,20 +230,35 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
           }),
         });
 
+        /*{
+          "chat_room_id": 265,
+          "confidence_threshold": 0.9,
+          "confidence_threshold_met": true,
+          "disease_classifications": [
+            { 21개 질병 분류 객체들 }
+          ],
+          "inference_result_id": 16,
+          "original_text": "0_USER_요즘 들어 오른쪽 윗배가 묵직하고 열이 미약하게 계속 나요, 피부가 점점 누렇게 보여요. 메시지를 받았습니다. 증상 분석을 위해 잠시만 기다려주세요.",
+          "processed_text": "요즘 듣 오른쪽 윗배 열 나 피부 누렇 보이 메시지 받 증상 분석 위하 잠시 기다리 주",
+          "top_disease": {
+            "label": "간염",
+            "score": 0.9992129802703857
+          },
+          "user_id": "5364e68a-72ae-45f7-b63b-0acd524ff168"
+        }*/
         const resultDiseases = await sendSymptom.json();
         
         // 질병예측 결과
         const {
-          chat_room_id,
-          processed_text,
           disease_classifications,
+          inference_result_id,
           top_disease,
-          confidence,
+          confidence_threshold,
           formatted_message,
         } = resultDiseases;
 
         console.log("[chat-interface] Send symptoms: top_disease", top_disease);
-        console.log("[chat-interface] Send symptoms: confidence", confidence);
+        console.log("[chat-interface] Send symptoms: confidence", confidence_threshold);
         console.log("[chat-interface] Send symptoms: formatted_message", formatted_message);
 
         // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
@@ -281,10 +266,11 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
         //setSearchAPI(false);
 
         if (top_disease) {
-          if (confidence >= 0.8) {
-            setDiseaseName(top_disease);
+          if (top_disease.score >= 0.8) {
+            setDiseaseName(top_disease.label);
+            setDiseaseInferenceId(inference_result_id);
 
-            return [top_disease, confidence, formatted_message];
+            return [top_disease.label, top_disease.score, `"${top_disease.label}" 증상일 확률이 ${top_disease.score}로 가장 높아요. 😥`];
           }
         }
         return ['', 0, getMessage('score_low')['content'].join('')];
@@ -295,24 +281,24 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     }
   };
 
-  const manageSendMessage = async(_messageContent: string) => {
-    const { content } = await sendChatText(_messageContent);
+  // const manageSendMessage = async(_messageContent: string) => {
+  //   const { content } = await sendChatText(_messageContent);
 
-    console.log('[chat-room-interface] content :: ', content);
-    console.log('[chat-room-interface] message :before delete: ', messages);
+  //   console.log('[chat-room-interface] content :: ', content);
+  //   console.log('[chat-room-interface] message :before delete: ', messages);
 
-    // if (botMessageFromPOST.indexOf(content) > -1) {
-    messages.map(item => {
-      if (botMessageFromPOST.indexOf(item) > -1) {
-        delete messages[item];
+  //   // if (botMessageFromPOST.indexOf(content) > -1) {
+  //   messages.map(item => {
+  //     if (botMessageFromPOST.indexOf(item) > -1) {
+  //       delete messages[item];
 
-        console.log('[chat-room-interface] message :after delete: ', messages);
+  //       console.log('[chat-room-interface] message :after delete: ', messages);
 
-        return messages;
-      }
-    });
-    // }
-  };
+  //       return messages;
+  //     }
+  //   });
+  //   // }
+  // };
 
   // chatbox 메시지 전송
   const handleSendMessage = async () => {
@@ -337,8 +323,8 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
 
     setMessages((prev) => [...prev, getMessage(MESSAGE_SCENARIO[nextStep])]);
 
-    const _content = await manageSendMessage(`${nextStep}_USER_${messageContent}`);
-    await showBotMessage(_content);
+    //const _content = await manageSendMessage(`${nextStep}_USER_${messageContent}`);
+    await showBotMessage(messageStep, messageContent);
   };
 
   // chatbox 메시지 전송 - chatbox 버튼 클릭
@@ -347,7 +333,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       content: [_message],
-      sender: "user",
+      message_type: "USER",
       timestamp: new Date(),
     }]);
     setInputMessage("");
@@ -358,7 +344,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
       id: Date.now().toString(),
       timestamp: new Date(),
       content: [],
-      sender: "bot",
+      message_type: "BOT",
     };
 
     //
@@ -396,24 +382,15 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
   };
 
   // chatbox Map 메시지 전송
-  const handleMapMessage = async (e: any) => {
-    e.preventDefault()
-
-    const hospitalInfo = e.currentTarget.name;
-    const [hospitalName, hospitalAddress, hospitalPhone] = hospitalInfo.split('^');
+  const handleMapMessage = async ({
+    name, address, phone, id
+  }: any) => {
+    const hospitalName = name;
+    const hospitalAddress = address;
+    const hospitalPhone = phone;
+    const hospitalId = id;
 
     console.log('hospitalName : ', hospitalName, ', hospitalAddress : ', hospitalAddress, ', hospitalPhone: ', hospitalPhone);
-
-    const getHospitalId = await fetch(`/api/medical/hospitals?search=${encodeURIComponent(hospitalName)}&department_id=${null}&disease_id=${null}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const hospitalInfoResult = await getHospitalId.json();
-    const hospitalId = hospitalInfoResult[0].id;
-
     console.log('hospitalId id:: ', hospitalId);
 
     const hospitalLocation = await fetch(`/api/medical/hospitals/${hospitalId}`, {
@@ -430,11 +407,11 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
 
     //메시지 보임 & input창 초기화 & 타이핑 효과 & input창 활성화
     setMessageStep(messageStep + 1);
-    setMessageStep(messageStep + 1);
+    //setMessageStep(messageStep + 1);
     setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       content: [`🏣 ${hospitalName} (${hospitalPhone})`, ` ${hospitalAddress}`],
-      sender: "bot",
+      message_type: "BOT",
       type: "map",
       timestamp: new Date(),
       hospitalName,
@@ -445,7 +422,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
     }]);
     setInputMessage("");
     setIsTypingEffect(false);
-    setUserInputDisabled(false);
+    setUserInputDisabled(true);
   };
 
   const flattenMessages = (input: any[]): any[] => {
@@ -470,9 +447,9 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
           }
         }
 
-        if (item.content instanceof Array && (botMessageFromPOST.indexOf(item.content.join()) > -1)) {
-          return;
-        }
+        // if (item.content instanceof Array && (botMessageFromPOST.indexOf(item.content.join()) > -1)) {
+        //   return;
+        // }
 
         resultMessages.push(item);
       }
@@ -483,26 +460,24 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
   };
 
   useEffect(() => {
-    if (_bootstrappedOnce) return;
-    _bootstrappedOnce = true;
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
 
-    console.log('[chat-room-interface] Message step: ', step);
-    console.log('[chat-room-interface] Message message: ', message);
-    console.log('[chat-room-interface] Message showTyping: ', showTyping);
-
-    // 초기 1회만 실행할 로직
     const [_step, _messages] = flattenMessages(message);
     setMessages(_messages);
     setIsTypingEffect(showTyping);
     setUserInputDisabled(showTyping);
-    setMessageStep(_step || step);
 
-    if (MESSAGE_SCENARIO[step] === "evaluating" && _messages.length) {
+    const currentStep = _step ?? step;
+    setMessageStep(currentStep);
+
+    if (!historyChat && MESSAGE_SCENARIO[currentStep] === "evaluating" && _messages.length) {
       const last = _messages[_messages.length - 1];
       const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
+
       if (content) {
-        (async() => {
-          await showBotMessage(content);
+        (async () => {
+          await showBotMessage(currentStep, content);
         })();
       }
     }
@@ -674,7 +649,7 @@ export function ChatRoomInterface({ id, step, message, showTyping}: any) {
                                 name={`${_locationItem.name}^${_locationItem.address}^${_locationItem.phone}`}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleMapMessage(e);
+                                  handleMapMessage(_locationItem);
                                 }}
                                 className="ml-2 cursor-pointer flex items-center gap-2 bg-transparent hover:bg-teal-500 hover:text-white"
                               >

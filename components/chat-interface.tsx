@@ -45,6 +45,7 @@ export function ChatInterface() {
   const [chatHistory, setChatHistory] = useState([]);
 
   const [hasStartedConversation, setHasStartedConversation] = useState(false);
+  const [historyChat, setHistoryChat] = useState(false);
 
   const [openDeleteId, setOpenDeleteId] = useState<string | number | null>(null);
   const [targetChat, setTargetChat] = useState<any | null>(null);
@@ -216,6 +217,8 @@ export function ChatInterface() {
     setRoomId(_chat.id);
 
     setHasStartedConversation(true);
+
+    setHistoryChat(true);
   };
 
   // 과거 문의목록 조회
@@ -374,6 +377,7 @@ export function ChatInterface() {
           step={messageStep}
           message={messages}
           showTyping={isTyping}
+          historyChat={historyChat}
           // status={setHasStartedConversation}
           // onSendChatText={sendChatText}
         />)
