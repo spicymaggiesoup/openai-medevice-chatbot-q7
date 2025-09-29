@@ -33,10 +33,11 @@ interface DepartmentsTagsButtonProps {
 type Props = {
   value?: number[];                     // 선택된 태그 (부모가 소유)
   onChange: (next: Hospital[]) => void;  // 부모로 값 전달
+  onLoadingChange: (next: boolean) => void;  // 부모로 값 전달
   isCompact?: boolean;
 };
 
-export function DepartmentTags({ onChange, isCompact }: Props) {
+export function DepartmentTags({ onLoadingChange, onChange, isCompact }: Props) {
   const [departmentList, setDepartmentList] = useState<Departments[]>([]);
 
   const [countHospitals, setCountHospitals] = useState(0);
@@ -58,6 +59,7 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
         const params = new URLSearchParams({
           department_id: `${_department.id}`,
         });
+
         const getHospitalsList = await fetch(`/api/medical/hospitals?${params.toString()}`, {
           method: "GET",
           headers: {
@@ -74,6 +76,7 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
     
       } catch (err) {
         console.error("부서 정보 가져오기 실패");
+
       }
     })();
   }
@@ -100,7 +103,9 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
   
   useEffect(() => {
     (async() => {
-      try {        
+      try {     
+        onLoadingChange(true);
+
         const getAllDepartments = await fetch("/api/medical/departments", {
           method: "GET",
           headers: {
@@ -112,6 +117,8 @@ export function DepartmentTags({ onChange, isCompact }: Props) {
 
         setDepartmentList(departments);
 
+        onLoadingChange(false);
+        
         console.log('[department-interface] fetched departments :: ', departments);
     
       } catch (err) {

@@ -4,13 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation";
 
-import { useDisclosure } from "@chakra-ui/react";
-
-import { type Address } from "react-daum-postcode";
-
-import { User, Mail, Phone, Calendar, MapPin, Search } from "lucide-react"
-
-import { useChatToken, useUserInfo, useUserLocationNew } from "@/lib/store";
+import { User, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +13,8 @@ import { Select, SelectTrigger, SelectContent, SelectGroup, SelectItem, SelectVa
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
+import { useToast } from "@/components/ui/toast";
+
 import { PostcodeLayout } from "@/components/postcode-layout"
 
 interface UserAccountFormProps {
@@ -26,6 +22,7 @@ interface UserAccountFormProps {
 }
 
 export function UserAccountForm({ onClose }: UserAccountFormProps) {
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -53,16 +50,15 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('콘솔 회원가입 :: ', formData);
-
     setIsLoading(true);
 
     try {
       // 회원가입
-      const setAuthRegister = await fetch('/api/auth/register', {
+      const registerNewUser = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
+          "accept": "application/json",
         },
         body: JSON.stringify({
           email: formData.email,
@@ -75,24 +71,33 @@ export function UserAccountForm({ onClose }: UserAccountFormProps) {
           longitude: 0,
         }),
       })
-      const { detail } = await setAuthRegister.json();
-      console.log('[user-account-form] User Location :: ', detail);
+      const registerResult = await registerNewUser.json()
+      console.log('[user-account-form] User Location :: ', registerResult);
 
-      if (detail && detail[0]['loc']) {
-        
-      }
-    
       setIsLoading(false);
 
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
+      if (registerResult.detail) {
+        toast({
+          title: "가입 실패",
+          description: registerResult.detail,
+          variant: "warning",
+        });
+      } else {
+        toast({
+          title: "가입 성공",
+          description: "로그인 페이지로 돌아갑니다.",
+          variant: "success",
+        });
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
 
     } catch(e) {
       console.error(e);
       setError(`회원가입 정보를 다시 확인해주세요.`);
     }
-    
   };
 
   return (

@@ -215,3 +215,59 @@ export async function RECOMMEND_HOSPITALS_BY_DISEASE(req: Request) {
   }
 }
 
+/*
+특정 추론 결과의 병원 추천 결과 조회
+
+기본값: 점수순 정렬 (rank 기준)
+* sort_by 옵션:
+  distance: 거리순 (가까운 순)
+  equipment: 장비 매칭순 (높은 순)
+  department: 진료과 매칭순 (높은 순)
+*/
+export async function RECOMMEND_HOSPITALS_BY_INFERENCE(
+  req: Request,
+  inferenceResultId: number
+) {
+  try {
+    const origin = req.headers.get("origin") || "";
+    if (!API_BASE) {
+      return NextResponse.json({ ok: false, error: "API_BASE not set" }, { status: 500 });
+    }
+    if (origin && API_BASE.startsWith(origin)) {
+      return NextResponse.json(
+        { ok: false, error: "API_BASE misconfigured (points to this app)" },
+        { status: 500 }
+      );
+    }
+
+    // ✅ 쿼리스트링 그대로 전달
+    const { search } = new URL(req.url);
+    const upstreamUrl = new URL(
+      `/api/medical/recommendations/inference/${inferenceResultId}${search}`,
+      API_BASE
+    ).toString();
+
+    const auth = req.headers.get("authorization");
+
+    const r = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: {
+        ...(auth ? { authorization: auth } : {}),
+        accept: "application/json",
+      },
+      cache: "no-store",
+      // ❌ GET에 body 금지
+    });
+
+    return new NextResponse(r.body, {
+      status: r.status,
+      headers: { "content-type": r.headers.get("content-type") ?? "application/json" },
+    });
+  } catch (err) {
+    console.error(
+      `Proxy GET /api/medical/recommendations/inference/${inferenceResultId} error:`,
+      err
+    );
+    return NextResponse.json({ ok: false, error: "proxy-error" }, { status: 500 });
+  }
+}

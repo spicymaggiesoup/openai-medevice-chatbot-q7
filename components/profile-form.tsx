@@ -53,6 +53,8 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
 
   const [showDetailAddressInput, setShowDetailAddressInput] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   // 토큰
   const token = useChatToken((s) => s.chatToken);
 
@@ -62,9 +64,11 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    setIsLoading(true);
+
     e.preventDefault()
 
-    const newAddress = formData.address
+    const newAddress = formData.address;
 
     // 주소변경
     const modifyLocation = await fetch('/api/users/location', {
@@ -81,7 +85,9 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
     useUserInfo.getState().setLatitude(userLocation.latitude || '');
     useUserInfo.getState().setLongitude(userLocation.longitude || '');
 
-    onClose()
+    setIsLoading(false);
+
+    onClose();
   };
 
   const handleCompletePost = (data: Address) => {
@@ -143,7 +149,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
              focus:outline-none focus:ring-0 focus:border-t-0 focus:border-l-0
              focus:border-r-0 focus:shadow-none focus-visible:outline-none
              focus-visible:ring-0"
-              />ㅗ
+              />
             </div>
             <div>
             <Label htmlFor="age" className="flex items-center gap-2">
@@ -237,8 +243,9 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
             <Button
               type="submit"
               className="flex-1 bg-teal-500 hover:bg-teal-600 cursor-pointer"
+              disabled={isLoading}
             >
-              수정
+              {isLoading ? (<span>적용 중...<span className="dots">...</span></span>) : (<span>적용</span>)}
             </Button>
             <Button
               type="button"

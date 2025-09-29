@@ -4,8 +4,7 @@ import { useState, useEffect, Fragment } from "react"
 import { DepartmentTags } from "@/components/department-tags"
 import { MapPinIcon } from "@/components/icon/icon-map-pin"
 import { PhoneIcon } from "@/components/icon/icon-phone"
-import { IconChevronUp } from "@/components/icon/icon-chevron-up"
-import { IconChevronDown } from "@/components/icon/icon-chevron-down"
+import { SkeletonDepartmentLoading } from "@/components/ui/loading";
 
 interface Hospital {
   id: string
@@ -29,12 +28,21 @@ interface Equipment {
 type EquipmentsById = Record<string, Equipment[]>;
 type FlagsById = Record<string, boolean>;
 
-export function SearchHospitalsInterface() {
+type PageKey = "chat" | "search";
+type ChildPageProps = {
+  navigate: (page: PageKey) => void;
+  currentPage: PageKey;
+  sendParams?: any
+};
+
+export function SearchHospitalsInterface({ navigate, currentPage, sendParams }: ChildPageProps) {
   const [searchedList, setSearchedList] = useState<Hospital[]>([]);
   const [filteredHospitals, setFilteredHospitals] = useState<Hospital[]>([]);
   const [equipmentById, setEquipmentById] = useState<EquipmentsById>({});
   const [fetchedById, setFetchedById] = useState<FlagsById>({});
   const [expandedById, setExpandedById] = useState<FlagsById>({});
+
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleCall = (phone: string) => window.open(`tel:${phone}`);
 
@@ -72,8 +80,17 @@ export function SearchHospitalsInterface() {
 
   return (
     <div className="search-hospitals h-dvh min-h-0 bg-emerald-50 p-6 flex flex-col">
-      <div className="mb-6">
-        <DepartmentTags onChange={setSearchedList} isCompact />
+      <div className="mb-6 relative">
+        <DepartmentTags
+          onLoadingChange={setIsLoading}
+          onChange={setSearchedList}
+          isCompact
+        />
+        {isLoading && (
+          <div className="absolute inset-0 z-10">
+            <SkeletonDepartmentLoading />
+          </div>
+        )}
       </div>
 
       <div className="hospital-table bg-white rounded-lg shadow-sm border border-gray-200 flex-1 min-h-0 flex flex-col p-0">

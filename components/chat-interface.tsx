@@ -1,12 +1,15 @@
 "use client"
 
 import type React from "react"
-import { Fragment, useState, useEffect, useRef, useCallback } from "react"
+import { Fragment, useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation";
 
 import { useChatToken } from "@/lib/store";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input" 
+import { useToast } from "@/components/ui/toast";
+import { SkeletonChatLoading } from "@/components/ui/loading";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { IconTrash2 } from "@/components/icon/icon-trash"
 import { MediBot } from "@/components/img/medi-bot"
@@ -14,6 +17,7 @@ import { MediBot } from "@/components/img/medi-bot"
 import { ChatRoomInterface } from "@/components/chat-room-interface"
 import { chatInterfaceTemplate } from "@/lib/template"
 import { Send } from "lucide-react"
+
 
 const INTERFACE_TEMPLATE: any /*{
   welcome: WelcomTemlate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
@@ -25,9 +29,15 @@ const INTERFACE_TEMPLATE: any /*{
   adios: AdiosTemplate = () => { id: string; content: string[]; message_type: string; timestamp: Date; type: string; }[];
 }*/ = chatInterfaceTemplate;
 
-export function ChatInterface() {
+type PageKey = "chat" | "search";
+type ChildPageProps = { navigate: (p: PageKey) => void; currentPage: PageKey, sendParams?: any };
+
+export function ChatInterface({ navigate, currentPage, sendParams  }: ChildPageProps) {
+  
   // 토큰
   const token = useChatToken((s) => s.chatToken);
+
+  const { toast } = useToast();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -53,22 +63,41 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [roomId, setRoomId] = useState(0);
 
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  const router = useRouter();
+
+  const goSearch = () => navigate("search");
+
   const getPastUserChatRooms = async() => {
-    const getUserChatRooms = await fetch("/api/chat/rooms", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    });
+    try {
+      setIsLoadingHistory(true);
+      const getUserChatRooms = await fetch("/api/chat/rooms", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
 
-    const uesrChatRooms = await getUserChatRooms.json();
+      const uesrChatRooms = await getUserChatRooms.json();
 
-    setChatHistory(uesrChatRooms);
+      setChatHistory(uesrChatRooms);
 
-    console.log('[chat-interface] Load init chat rooms : ', uesrChatRooms);
+      setIsLoadingHistory(false);
 
-    return uesrChatRooms;
+      console.log('[chat-interface] Load init chat rooms : ', uesrChatRooms);
+
+      return uesrChatRooms;
+    } catch(e) {
+      console.error(e);
+
+      toast({
+        title: "로드 실패",
+        description: "과거 채팅내역을 조회할 수 없습니다.",
+        variant: "warning",
+      });
+    }
   }
 
   const deleteChatRoom = async() => {
@@ -89,10 +118,26 @@ export function ChatInterface() {
         const chatRooms = await getPastUserChatRooms();
 
         console.log('[chat-interface] Reload chat rooms : ', chatRooms);
+
+        toast({
+          title: "삭제 완료",
+          description: "해당 내역을 삭제했습니다.",
+          variant: "success",
+        });
       }
 
     } catch(e) {
       console.error(e);
+
+      toast({
+        title: "삭제 실패",
+        description: "다시 시도해주세요.",
+        variant: "warning",
+      });
+
+      setTimeout(() => {
+        router.push("/");
+      }, 1000);
     }
   };
 
@@ -282,13 +327,19 @@ export function ChatInterface() {
             </div>
 
             {/* Chat History */}
-            <div className="chat-history space-y-3 overflow-auto max-h-[61vh] supports-[height:100dvh]:max-h-[61dvh]">
-              {chatHistory.map((chat: any) => (
-                // <Link key={chat.id} href="/chat">
+            <div
+              className="chat-history space-y-3 overflow-auto max-h-[61vh] supports-[height:100dvh]:max-h-[61dvh]"
+              role="status"
+              aria-busy={isLoadingHistory}
+            >
+              {isLoadingHistory ? (
+                Array.from({ length: 8 }).map((_, i) => <SkeletonChatLoading key={i} />)
+              ) : chatHistory.length > 0 ? (
+                chatHistory.map((chat: any) => (
                   <div
                     key={chat.id}
                     className="p-4 border-gray-200 border bg-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
-                    >
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3
@@ -299,14 +350,17 @@ export function ChatInterface() {
                         >
                           {chat.title}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{((_toDate) => 
-                          `${_toDate.getFullYear()}/${_toDate.getMonth()}/${_toDate.getDate()}`
-                        )(new Date(chat.created_at))}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {((_toDate) => `${_toDate.getFullYear()}/${_toDate.getMonth()}/${_toDate.getDate()}`)(
+                            new Date(chat.created_at)
+                          )}
+                        </p>
                       </div>
+
+                      {/* ▼ 기존 Popover 그대로 */}
                       <Popover
                         open={openDeleteId === chat.id}
                         onOpenChange={(open) => {
-                          // 이 행의 Popover가 열릴/닫힐 때만 상태 변경
                           if (open) {
                             setTargetChat(chat);
                             setOpenDeleteId(chat.id);
@@ -345,9 +399,7 @@ export function ChatInterface() {
                               className="cursor-pointer px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700"
                               onClick={async () => {
                                 if (!targetChat) return;
-
                                 await deleteChatRoom();
-                                
                                 setOpenDeleteId(null);
                               }}
                             >
@@ -365,8 +417,11 @@ export function ChatInterface() {
                       </Popover>
                     </div>
                   </div>
-                // </Link>
-              ))}
+                ))
+              ) : (
+                // 빈 목록일 때
+                <div className="p-8 text-center text-sm text-gray-500">저장된 대화가 없습니다.</div>
+              )}
             </div>
           </div>
         </div>)
@@ -377,6 +432,7 @@ export function ChatInterface() {
           message={messages}
           showTyping={isTyping}
           historyChat={historyChat}
+          moveToSearch={goSearch}
           // status={setHasStartedConversation}
           // onSendChatText={sendChatText}
         />)

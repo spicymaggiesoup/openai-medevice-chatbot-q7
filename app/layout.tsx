@@ -4,8 +4,7 @@ import { Noto_Sans_KR } from 'next/font/google'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
-// import { SocketProvider } from "@/components/socket-provider";
-// import { WSProvider } from "@/components/ws-provider";
+import { ToastProvider } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: 'MeDeviSe Seocho',
@@ -31,7 +30,9 @@ export default function RootLayout({
     <html lang="ko" className={noto.className}>
       <head />
       <body className={`${noto.className}`}>
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
         <Script src={KAKAO_API} strategy="beforeInteractive" />
         <Script src={DAUM_POSTCODE} strategy="beforeInteractive" />
       </body>
