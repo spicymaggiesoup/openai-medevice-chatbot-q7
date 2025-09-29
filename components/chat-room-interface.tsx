@@ -64,8 +64,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
   const [goToChatMain, setGoToChatMain] = useState(false);
   
   const [botMessageFromPOST] = useState([
-    "증상에 대해 더 자세히 알려주시면 보다 정확한 정보를 제공해드릴 수 있습니다.",
-    "분석 중입니다...",
+    "메시지를 받았습니다. 증상 분석을 위해 잠시만 기다려주세요.",
   ]);
 
   const [roomId] = useState(id);
@@ -141,10 +140,6 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
     } catch(e) {
       console.error(e);
     }
-  };
-
-  const createNewChatRoom = async() => {
-
   };
 
   const scrollToBottom = () => {
@@ -253,13 +248,9 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
           disease_classifications,
           inference_result_id,
           top_disease,
-          confidence_threshold,
-          formatted_message,
         } = resultDiseases;
 
         console.log("[chat-interface] Send symptoms: top_disease", top_disease);
-        console.log("[chat-interface] Send symptoms: confidence", confidence_threshold);
-        console.log("[chat-interface] Send symptoms: formatted_message", formatted_message);
 
         // {id: 3, message_type: 'USER', content: 'sd', created_at: '2025-09-11T14:24:19.250527'}
 
@@ -270,7 +261,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
             setDiseaseName(top_disease.label);
             setDiseaseInferenceId(inference_result_id);
 
-            return [top_disease.label, top_disease.score, `"${top_disease.label}" 증상일 확률이 ${top_disease.score}로 가장 높아요. 😥`];
+            return [top_disease.label, top_disease.score, `"${top_disease.label}" 증상일 확률이 ${(top_disease.score * 100).toFixed}로 가장 높아요. 😥`];
           }
         }
         return ['', 0, getMessage('score_low')['content'].join('')];
@@ -369,7 +360,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
       }, getMessage("adios")));
 
       setIsTypingEffect(false);
-      setUserInputDisabled(false);
+      setUserInputDisabled(true);
 
     // 다른걸 입력했다 ?
     } else {
@@ -447,9 +438,9 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
           }
         }
 
-        // if (item.content instanceof Array && (botMessageFromPOST.indexOf(item.content.join()) > -1)) {
-        //   return;
-        // }
+        if (botMessageFromPOST.indexOf(item.content) > -1) {
+          return;
+        }
 
         resultMessages.push(item);
       }
@@ -460,42 +451,49 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
   };
 
   useEffect(() => {
+    console.log('[chat-room-interface] After load Chat Room Interface');
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
 
     const [_step, _messages] = flattenMessages(message);
     setMessages(_messages);
-    setIsTypingEffect(showTyping);
-    setUserInputDisabled(showTyping);
 
-    const currentStep = _step ?? step;
-    setMessageStep(currentStep);
+    // 히스토리 챗 열람
+    if (historyChat) {
+      _messages.push({
+        id: _messages[_messages.length - 1]['id'] + 1,
+        content: '의료진과 상담이 가능한 병원 목록을 조회해드릴게요.' ,
+        //created_at: _messages[_messages.length - 1]['created_at'], 
+        message_type: "BOT",
+        timestamp: new Date(),
+          type: "button-check",
+          buttons: ["병원 및 장비현황 조회 페이지로 이동"],
+          buttonsCallback: [
+              () => ``,
+              () => ``,
+          ],
+      });
+      setUserInputDisabled(true);
+    
+    } else {
+      setIsTypingEffect(showTyping);
+      setUserInputDisabled(showTyping);
 
-    if (!historyChat && MESSAGE_SCENARIO[currentStep] === "evaluating" && _messages.length) {
-      const last = _messages[_messages.length - 1];
-      const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
+      const currentStep = _step ?? step;
+      setMessageStep(currentStep);
 
-      if (content) {
-        (async () => {
-          await showBotMessage(currentStep, content);
-        })();
+      if (MESSAGE_SCENARIO[currentStep] === "evaluating" && _messages.length) {
+        const last = _messages[_messages.length - 1];
+        const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
+
+        if (content) {
+          (async () => {
+            await showBotMessage(currentStep, content);
+          })();
+        }
       }
     }
   }, []);
-
-  // useEffect(() => {
-  //   if (!bootstrapped) return;
-  //   if (!messages.length) return;
-
-  //   if (MESSAGE_SCENARIO[messageStep] === "evaluating") {
-  //     const last = messages[messages.length - 1];
-  //     const content = Array.isArray(last.content) ? last.content.join("\n") : last.content;
-  //     if (content) {
-  //       showBotMessage(content);
-  //       setBootstrapped(false);
-  //     }
-  //   }
-  // }, [bootstrapped, messageStep, messages]);
 
   // 스크롤 이동
   useEffect(() => {
@@ -704,10 +702,11 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat}:
               placeholder="MeDeviSe에게 문의하세요."
               className="flex-1 border-gray-200 focus:border-teal-400 focus:ring-emerald-400 rounded-xl"
               disabled={userInputDisabled}
+              readOnly={userInputDisabled}
             />
             <Button
               onClick={handleSendMessage}
-              // disabled={!inputMessage.trim() || isTypingEffect}
+              disabled={userInputDisabled}
               className="bg-teal-500 hover:bg-emerald-600 text-white rounded-xl px-6"
             >
               <Send className="w-4 h-4" />

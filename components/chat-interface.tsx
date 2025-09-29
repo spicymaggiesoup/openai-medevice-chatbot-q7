@@ -215,10 +215,9 @@ export function ChatInterface() {
       onSendChatText={sendChatText}
     */
     setRoomId(_chat.id);
+    setHistoryChat(true);
 
     setHasStartedConversation(true);
-
-    setHistoryChat(true);
   };
 
   // 과거 문의목록 조회
