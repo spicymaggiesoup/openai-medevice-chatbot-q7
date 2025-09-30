@@ -128,7 +128,7 @@ export function DepartmentTags({ onLoadingChange, onChange, isCompact }: Props) 
   }, []);
 
   return (
-    <div className={`department-tags bg-emerald-50`}>
+    <div className={`department-tags bg-green-100`}>
       {!isCompact && (
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">진료과로 병원기기 찾기</h3>

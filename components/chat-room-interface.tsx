@@ -222,6 +222,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat, 
           body: JSON.stringify({
             chat_room_id: roomId,
             text: _message,
+            start_new_session: historyChat || false,
           }),
         });
 
@@ -536,7 +537,7 @@ export function ChatRoomInterface({ id, step, message, showTyping, historyChat, 
   }, [messages]);
 
   return (
-    <div className="chat-interface flex flex-col flex-1 min-h-0 bg-emerald-50 overflow-hidden">
+    <div className="chat-interface flex flex-col flex-1 min-h-0 bg-green-100 overflow-hidden">
       <Popover
         open={goToChatMain}
       >

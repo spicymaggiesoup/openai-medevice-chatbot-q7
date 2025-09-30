@@ -278,7 +278,7 @@ export function ChatInterface({ navigate, currentPage, sendParams  }: ChildPageP
   return (
     <Fragment>
     {!hasStartedConversation
-      ? (<div className="h-dvh min-h-screen bg-emerald-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+      ? (<div className="h-dvh min-h-screen bg-green-100 dark:bg-gray-900 text-gray-900 dark:text-white">
           {/* Main Content */}
           <div className="max-w-4xl mx-auto pt-8 pr-6 pb-8 pl-6">
             <div className="flex items-center justify-center mb-8">
@@ -288,7 +288,7 @@ export function ChatInterface({ navigate, currentPage, sendParams  }: ChildPageP
                     key={message.id}
                     className={`text-l w-full`}>
                     {message.content.map((_message: string, order: any) => (
-                      <p className="leading-relaxed" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</p>
+                      <h2 className="leading-relaxed text-xl" key={`${order}_${new Date().getMilliseconds()}`}>{_message}</h2>
                     ))}
                   </div>
                 ))}

@@ -79,7 +79,7 @@ export function SearchHospitalsInterface({ navigate, currentPage, sendParams }: 
   }, [searchedList]);
 
   return (
-    <div className="search-hospitals h-dvh min-h-0 bg-emerald-50 p-6 flex flex-col">
+    <div className="search-hospitals h-dvh min-h-0 bg-green-100 p-6 flex flex-col">
       <div className="mb-6 relative">
         <DepartmentTags
           onLoadingChange={setIsLoading}
